@@ -25,7 +25,7 @@ class UtilProject(info: ProjectInfo) extends ParentProject(info) with IdeaProjec
   lazy val ui = project("ui", "util.ui", info => new Specs2Support(info) with IdeaProject {
     //val treewrap = "Ken Scambler" %% "scalaswingtreewrapper" % "1.1"
     val miglayout = "com.miglayout" % "miglayout" % "3.7.3.1"
-    val swing= "org.scala-lang" % "scala-swing" % "2.9.0-SNAPSHOT"
+    val swing= "org.scala-lang" % "scala-swing" % buildScalaVersion 
 
   })
 
