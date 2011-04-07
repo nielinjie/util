@@ -3,7 +3,9 @@ package util.ui
 
 import collection.mutable.ListBuffer
 
-case class Model[A](var value: A) extends Changable[A] {
+case class Model[A](value_ : A) extends Changable[A] {
+  private var value: A = value_
+
   def set(f: A => A) = {
     val oldValue = this.value
     this.value = f(this.value)

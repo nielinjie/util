@@ -1,5 +1,7 @@
 .idea
 *iml
+*~
+*.log
 
 target/
 lib_managed/

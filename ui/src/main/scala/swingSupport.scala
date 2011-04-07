@@ -21,7 +21,7 @@ object UISupport {
 
 class CanBindToList[A](val masterAndDetail: MasterDetail[A]) {
   def bindMasterTo(listView: ListView[A]) = {
-    listView.listData = masterAndDetail.master.value
+    listView.listData = masterAndDetail.master.get
     listView.listenTo(listView.selection)
     listView.reactions += {
       case SelectionChanged(`listView`) => {
@@ -45,9 +45,22 @@ class CanBindToList[A](val masterAndDetail: MasterDetail[A]) {
     }
   }
 
-  def detailBack(component: Component, reactions: PartialFunction[Event, Unit]*) {
-    reactions.foreach {
-      component.reactions += _
+  def detailBack(component: Component, reaction: PartialFunction[Event, A]) {
+    component.reactions += {
+      //      case e:Event =>
+      //        if (reaction.isDefinedAt(e))
+      //          masterAndDetail.selected.foreach(
+      //            sel => sel.value.set(
+      //              x => reaction(e)
+      //            )
+      //          )
+      reaction.andThen({
+        x: A => masterAndDetail.selected.foreach(
+          sel => sel.value.set(
+            v => x
+          )
+        )
+      })
     }
   }
 }
