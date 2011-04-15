@@ -6,20 +6,23 @@ import swing.{Table, Publisher, Component, ListView}
 import reactive._
 import swing.event.{Event, SelectionChanged}
 
+object EventSupport {
+  implicit def component2EventWrap(component: Component): GeneralEventStreamWrap = new GeneralEventStreamWrap(component)
+
+  implicit def eventWrap2Component(eventWrap: GeneralEventStreamWrap): Component = eventWrap.component
+}
+
 object SelectSupport {
 
-  implicit def componentWithSelectSupport2Component[A, T](componentWithSelectSupport: ComponentWithSingleSelectSupport[A, T]): T = componentWithSelectSupport.component
+  implicit def singleSelectSupport2Component[A, T](singleSelectSupport: SingleSelectSupport[A, T]): T = singleSelectSupport.component
 
-  implicit def componentWithSelectSupport2BindSelectedSupported[A, T](componentWithSelectSupport: ComponentWithSingleSelectSupport[A, T]): BindSelectedSupport[A, T] = new BindSelectedSupport(componentWithSelectSupport)
-  implicit def component2GeneralEventStreamSupport(component:Component): GeneralEventStreamSupport = new GeneralEventStreamSupport(component)
-
-  implicit def listView2SelectSupport[A](listView: ListView[A]) = new SelectableWrap[A, ListView[A]](listView) {
-    def singleSelect = new ListViewWithSingleSelectSupport[A](listView)
+  implicit def listView2SelectSupport[A](listView: ListView[A]) = new SelectEventWrap[A, ListView[A]](listView) {
+    def singleSelect = new ListViewSingleSelectSupport[A](listView)
   }
 
 }
 
-class ListViewWithSingleSelectSupport[A](val listView: ListView[A]) extends ComponentWithSingleSelectSupport[A, ListView[A]](listView) {
+class ListViewSingleSelectSupport[A](val listView: ListView[A]) extends SingleSelectSupport[A, ListView[A]](listView) {
   listView.selection.intervalMode = ListView.IntervalMode.Single
   listView.selection.reactions += {
     case SelectionChanged(`listView`) =>
@@ -38,18 +41,9 @@ class ListViewWithSingleSelectSupport[A](val listView: ListView[A]) extends Comp
     }
     updating = false
   }
-
-  //  def onModelChange(seqDelta:SeqDelta){
-  //    seqDelta match {
-  //      case Update(index,_,newV) =>
-  //
-  //      case Remove(index,_)
-  //      case Include(index,newV)
-  //    }
-  //  }
 }
 
-abstract class ComponentWithSingleSelectSupport[A, T](val component: T) {
+abstract class SingleSelectSupport[A, T](val component: T) extends BindSelectedSupport[A, T] {
   var updating = false
   val selectChanging: EventSource[SingleSelecting[A]] = new EventSource[SingleSelecting[A]]() {}
   val selectChangedEvent = selectChanging.filter({
@@ -63,33 +57,37 @@ abstract class ComponentWithSingleSelectSupport[A, T](val component: T) {
 
   def setSelectedValue(value: A)
 
-  //  //TODO, refactory to set delta?
-  //  def onModelChange(seqDelta:SeqDelta)
 }
 
 case class SingleSelecting[A](val selected: Option[A], val updating: Boolean)
 
-class BindSelectedSupport[A, T](val componentWithSelectSupport: ComponentWithSingleSelectSupport[A, T]) extends Observing {
-
-  def bindSelected(from: Option[A] => Unit, eventStream: EventStream[A]): ComponentWithSingleSelectSupport[A, T] = {
+trait BindSelectedSupport[A, T] extends Observing {
+  componentWithSelectSupport: SingleSelectSupport[A, T] =>
+  def bindSelected(from: Option[A] => Unit, eventStream: EventStream[A]): SingleSelectSupport[A, T] = {
     componentWithSelectSupport.selectChangedEvent.foreach(from)
     eventStream.foreach(a => componentWithSelectSupport.setSelectedValue(a))
     componentWithSelectSupport
   }
-  def bindSelected(from: Option[A] => Unit): ComponentWithSingleSelectSupport[A, T] = {
+
+  def bindSelected(from: Option[A] => Unit): SingleSelectSupport[A, T] = {
     componentWithSelectSupport.selectChangedEvent.foreach(from)
     componentWithSelectSupport
   }
 }
 
-abstract class SelectableWrap[A, T <: Component](val component: T) {
-  def singleSelect: ComponentWithSingleSelectSupport[A, T]
+abstract class SelectEventWrap[A, T <: Component](val component: T) {
+  def singleSelect: SingleSelectSupport[A, T]
 }
 
-class GeneralEventStreamSupport(val component:Component) {
-  def eventStream[A](f:PartialFunction[Event,A])={
-    val eventStream=new EventSource[A](){}
-    component.reactions+=f.andThen(a => eventStream.fire(a))
+class GeneralEventStreamWrap(val component: Component) {
+  def eventStream[A](f: PartialFunction[Event, A]) = {
+    val eventStream = new EventSource[A]() {}
+    component.listenTo(component)
+    component.reactions += f.andThen({
+      a =>
+        println(a)
+        eventStream.fire(a)
+    })
     eventStream
   }
 }
