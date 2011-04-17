@@ -27,7 +27,7 @@ class ListViewSingleSelectSupport[A](val listView: ListView[A]) extends SingleSe
   listView.selection.reactions += {
     case SelectionChanged(`listView`) =>
       if (!listView.selection.adjusting) {
-        selectChanging.fire(SingleSelecting(listView.selection.items.headOption, updating))
+        selectChanging.fire(SingleSelecting(listView.selection.items.headOption, listView.selection.indices.headOption, updating))
       }
   }
 
@@ -37,6 +37,17 @@ class ListViewSingleSelectSupport[A](val listView: ListView[A]) extends SingleSe
     selectedIndex.foreach {
       index =>
         listView.listData = listView.listData.updated(index, value)
+        listView.selectIndices(index)
+    }
+    updating = false
+  }
+
+  def updateKeepingSelect(list: List[A]) = {
+    updating = true
+    val selectedIndex = listView.selection.indices.headOption
+    selectedIndex.foreach {
+      index =>
+        listView.listData = list
         listView.selectIndices(index)
     }
     updating = false
@@ -53,13 +64,21 @@ abstract class SingleSelectSupport[A, T](val component: T) extends BindSelectedS
     e =>
       e.selected
   })
+  val selectIndexChangedEvent = selectChanging.filter({
+    e =>
+      !e.updating
+  }).map({
+    e =>
+      e.selectedIndex
+  })
   val selected: Signal[Option[A]] = selectChangedEvent.hold(None)
 
   def setSelectedValue(value: A)
 
+  def updateKeepingSelect(list: List[A])
 }
 
-case class SingleSelecting[A](val selected: Option[A], val updating: Boolean)
+case class SingleSelecting[A](val selected: Option[A], val selectedIndex: Option[Int], val updating: Boolean)
 
 trait BindSelectedSupport[A, T] extends Observing {
   componentWithSelectSupport: SingleSelectSupport[A, T] =>

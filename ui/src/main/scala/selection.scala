@@ -3,62 +3,91 @@ package util.ui
 
 import collection.mutable.ListBuffer
 
-case class Model[A](value_ : A) extends Changable[A] {
+class Model[A](value_ : A, val bind: Option[Bind[A]]) extends Changable[A] {
   private var value: A = value_
 
   def set(f: A => A) = {
     val oldValue = this.value
-    this.value = f(this.value)
+    val newValue = f(this.value)
+    this.value = newValue
+    this.bind.foreach {
+      b =>
+        b.push(this.value)
+    }
     notifyChangeListener(oldValue, this.value)
   }
 
   def get = {
+    this.bind.foreach {
+      b =>
+        this.value = b.pull()
+    }
     this.value
   }
-}
-
-class View[A]
-
-class MV[A](val model: Model[A], val view: View[A]) {
 
 }
 
-case class Selected[A](val value: Model[A], val index: Int)
+case class Bind[A](val push: (A => Unit), val pull: () => A)
 
-class MasterDetail[A](val master: Model[List[A]]) extends Changable[Option[Selected[A]]] {
-  var selected: Option[Selected[A]] = None
-
-  def select(value: A): Unit = {
-    val index = this.master.get.indexOf(value)
-    if (index != -1) select(index)
+case class Selection[A](var value: Option[A], var index: Option[Int]) {
+  def saveToMaster(master: List[A]): List[A] = {
+    index.map {
+      i =>
+        master.updated(i, value.get)
+    }.getOrElse(master)
   }
 
-  def select(index: Int): Unit = {
-    val oldSelected = this.selected
-    this.selected.foreach({
-      sel =>
-        saveDetail
-    })
-    this.selected = Some(Selected(Model(master.get.apply(index)), index))
-    notifyChangeListener(oldSelected, this.selected)
+  def selected = !(this.index.isEmpty)
+}
+
+
+class MasterDetail[A](var master: List[A]) {
+  def check = {
+    println(master)
+    println(selection)
   }
 
-  def onSaveDetail(value: A) = {
-    this.selected.foreach {
-      sel =>
-        master.set({
-          oldValue: List[A] =>
-            oldValue.updated(sel.index, value)
-        })
+  var selection: Selection[A] = new Selection[A](None, None)
+  var detailBind: Option[Bind[A]] = None
+  var masterBind: Option[Bind[List[A]]] = None
+
+  def selectNone() = {
+    //TODO support none selection binding
+    this.selection.value = None
+    this.selection.index = None
+  }
+
+
+  def select(index: Option[Int]): Unit = {
+
+    val oldSelection = this.selection
+    saveDetail
+    this.selection.index = index
+    this.selection.value = index.map(master.apply(_))
+    this.detailBind.foreach {
+      b =>
+        this.selection.value match {
+          case Some(v) =>
+            b.push(v)
+          case None =>
+        }
     }
+
   }
+
 
   def saveDetail = {
-    this.selected.foreach(
-      sel =>
-        onSaveDetail(sel.value.get)
-    )
-
+    this.detailBind.foreach {
+      b =>
+        if (this.selection.selected) {
+          this.selection.value = Some(b.pull())
+        }
+    }
+    this.master = this.selection.saveToMaster(this.master)
+    masterBind.foreach {
+      b =>
+        b.push(this.master)
+    }
   }
 }
 
@@ -76,6 +105,28 @@ trait Changable[T] {
     this.onChanges.append(f)
   }
 
+}
+
+import scala.swing._
+import reactive._
+
+object SwingSupport extends Observing {
+  def bindToListView[A](masterDetail: MasterDetail[A], listView: ListView[A]) = {
+    import event.SelectSupport._
+    listView.listData = masterDetail.master
+    val selectSupport = listView.singleSelect
+    masterDetail.masterBind = Some(Bind({
+      list => selectSupport.updateKeepingSelect(list)
+    }, {
+      () => Nil
+    }))
+
+    selectSupport.selectIndexChangedEvent.foreach {
+      selIndex =>
+        println("from event stream  - " + selIndex)
+        masterDetail.select(selIndex)
+    }
+  }
 }
 
 
