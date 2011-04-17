@@ -44,10 +44,10 @@ class ListViewSingleSelectSupport[A](val listView: ListView[A]) extends SingleSe
 
   def updateKeepingSelect(list: List[A]) = {
     updating = true
+    listView.listData = list
     val selectedIndex = listView.selection.indices.headOption
     selectedIndex.foreach {
       index =>
-        listView.listData = list
         listView.selectIndices(index)
     }
     updating = false
