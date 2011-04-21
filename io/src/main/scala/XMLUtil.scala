@@ -21,7 +21,7 @@ object HtmlToXML{
   }
   }
 object XMLUtil{
-  def findByAttr(node:Elem, nodeName:String, attrName:String, attrValue:String)={
+  def findByAttr(node:Node, nodeName:String, attrName:String, attrValue:String)={
     (node \\ nodeName).filter({
       n:Node=>
       (n \ ("@"+attrName)).text==attrValue
