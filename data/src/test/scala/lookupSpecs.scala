@@ -74,9 +74,17 @@ object ParamsSpecs extends Specification {
       val lookingUp = for {
         a <- lookUp("a").required.as[Int].to[String];
         b <- lookUp("b").required.as[Int];
-        c <- lookUp("c")
+        c <- lookUp("c").as[Int]
+      } yield (a ,b,c)
+      lookingUp(theMap) must equalTo(Success(("1",2,None)))
+    }
+    "to other type Instance guard" in {
+      import Converters._
+      val lookingUp = for {
+        a <- lookUp("a").required.as[Int].to[String];
+        b <- lookUp("b").to[String]
       } yield (a ,b)
-      lookingUp(theMap) must equalTo(Success(("1",2)))
+      lookingUp(theMap) must equalTo(Success(("1",Some("2"))))
     }
   }
 }
