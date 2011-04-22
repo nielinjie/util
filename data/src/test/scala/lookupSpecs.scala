@@ -69,22 +69,55 @@ object ParamsSpecs extends Specification {
       } yield (a, b, c)
       lookingUp2(theMap) must haveClass[Failed[_]]
     }
+    "default works" in {
+      val lookingUp = for {
+        a <- lookUp("a").required;
+        b <- lookUp("b").as[Int].default(1);
+        c <- lookUp("c")
+        d <- lookUp("d").as[Int].default(1)
+      } yield (a, b, c, d)
+      lookingUp(theMap) must equalTo(Success(1, 2, None, 1))
+    }
     "as Instance guard" in {
       import Converters._
       val lookingUp = for {
         a <- lookUp("a").required.as[Int].to[String];
         b <- lookUp("b").required.as[Int];
         c <- lookUp("c").as[Int]
-      } yield (a ,b,c)
-      lookingUp(theMap) must equalTo(Success(("1",2,None)))
+      } yield (a, b, c)
+      lookingUp(theMap) must equalTo(Success(("1", 2, None)))
     }
     "to other type Instance guard" in {
       import Converters._
       val lookingUp = for {
         a <- lookUp("a").required.as[Int].to[String];
         b <- lookUp("b").to[String]
-      } yield (a ,b)
-      lookingUp(theMap) must equalTo(Success(("1",Some("2"))))
+      } yield (a, b)
+      lookingUp(theMap) must equalTo(Success(("1", Some("2"))))
     }
+    "ensuring guard" in {
+      val lookingUp = for {
+        a <- lookUp("a").required.ensuring(x => x != 1)
+        b <- lookUp("b").as[Int].default(1);
+        c <- lookUp("c")
+        d <- lookUp("d").as[Int].default(1)
+      } yield (a, b, c, d)
+      lookingUp(theMap) must haveClass[Failed[_]]
+
+      val lookingUp2 = for {
+        a <- lookUp("a").required.ensuring(x => x == 1)
+        b <- lookUp("b").as[Int].ensuring(x => x == 1)
+        d <- lookUp("d").as[Int].default(1)
+      } yield (a, b, d)
+      lookingUp2(theMap) must haveClass[Failed[_]]
+
+       val lookingUp3 = for {
+        a <- lookUp("a").required.ensuring(x => x == 1)
+        b <- lookUp("b").as[Int].ensuring(x => x != 1)
+        d <- lookUp("d").as[Int].default(1)
+      } yield (a, b, d)
+      lookingUp3(theMap) must equalTo(Success((1,Some(2),1)))
+    }
+
   }
 }
