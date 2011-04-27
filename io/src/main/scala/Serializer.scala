@@ -3,19 +3,19 @@ package util.io
 
 
 import com.thoughtworks.xstream.XStream
-abstract class Serializer{
-  def serialize[T](obj:T):String
-  def unSerialize[T](string:String):T
+abstract class Serializer[T]{
+  def serialize(obj:T):String
+  def unSerialize(string:String):T
 }
 object Serializer{
-  def apply():Serializer={new XStreamSerializer()}
+  def apply():Serializer[Any]={new XStreamSerializer[Any]()}
 }
-class XStreamSerializer extends Serializer{
+class XStreamSerializer[T] extends Serializer[T]{
   val xStream=new XStream()
-  override def serialize[T](obj:T)={
+  override def serialize(obj:T)={
     xStream.toXML(obj)
   }
-  override def unSerialize[T](string:String):T={
+  override def unSerialize(string:String):T={
     xStream.fromXML(string).asInstanceOf[T]
   }
 }

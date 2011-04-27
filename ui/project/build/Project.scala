@@ -8,7 +8,7 @@ class UiProject(info: ProjectInfo) extends DefaultProject(info) with IdeaProject
 
   def specs2Framework = new TestFramework("org.specs2.runner.SpecsFramework")
 
-  val specs = "org.specs2" %% "specs2" % "1.1-SNAPSHOT" % "test"
+  val specs = "org.specs2" %% "specs2" % "1.1" % "test"
 
   override def testFrameworks = super.testFrameworks ++ Seq(specs2Framework)
 
