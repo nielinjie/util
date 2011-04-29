@@ -40,11 +40,15 @@ object MasterAndDetail extends SimpleSwingApplication with Observing {
   val mdPerson = new MasterDetail(persons)
   mdPerson.detailBind = Some(Bind(
   {
-    a =>
+    case Some(a) => {
       mdName.setMaster(a.names)
       textAge.text = a.age.toString
+    }
+    case None => {
+      //TODO disable when nothing selected
+    }
   }, {
-    () => {
+   person => {
       mdName.saveDetail
       Person(textAge.text.toInt, mdName.getMaster)
     }
@@ -53,11 +57,15 @@ object MasterAndDetail extends SimpleSwingApplication with Observing {
 
   val mdName = new MasterDetail[Name](Nil)
   mdName.detailBind = Some(Bind({
-    n =>
+    case Some(n) => {
       textF.text = n.first
       textL.text = n.last
+    }
+    case None => {
+      //TODO disable when nothe selected
+    }
   }, {
-    () => Name(textF.text, textL.text)
+    name=>Name(textF.text, textL.text)
   }))
 
   val textAge = new TextField("age")

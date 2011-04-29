@@ -12,7 +12,7 @@ class Model[A](value_ : A, val bind: Option[Bind[A]]) extends Changable[A] {
     this.value = newValue
     this.bind.foreach {
       b =>
-        b.push(this.value)
+        b.push(Option(this.value))
     }
     notifyChangeListener(oldValue, this.value)
   }
@@ -20,14 +20,14 @@ class Model[A](value_ : A, val bind: Option[Bind[A]]) extends Changable[A] {
   def get = {
     this.bind.foreach {
       b =>
-        this.value = b.pull()
+        this.value = b.pull(this.value)
     }
     this.value
   }
 
 }
 
-case class Bind[A](val push: (A => Unit), val pull: () => A)
+case class Bind[A](val push: (Option[A] => Unit), val pull: (A => A))
 
 case class Selection[A](var value: Option[A], var index: Option[Int]) {
   def saveToMaster(master: List[A]): List[A] = {
@@ -63,20 +63,14 @@ class MasterDetail[A](_master: List[A]) {
   def select(index: Option[Int]): Unit = {
 
     val oldSelection = this.selection
-    println("before select's saveDetail")
-    this.check
+
     saveDetail
-    println("after select's saveDetail")
-    this.check
+   
     this.selection.index = index
     this.selection.value = index.map(master.apply(_))
     this.detailBind.foreach {
       b =>
-        this.selection.value match {
-          case Some(v) =>
-            b.push(v)
-          case None =>
-        }
+        b.push(this.selection.value)
     }
 
   }
@@ -86,28 +80,28 @@ class MasterDetail[A](_master: List[A]) {
     this.detailBind.foreach {
       b =>
         if (this.selection.selected) {
-          this.selection.value = Some(b.pull())
+          this.selection.value = Some(b.pull(this.selection.value.get))
         }
     }
     this.master = this.selection.saveToMaster(this.master)
     masterBind.foreach {
       b =>
-        b.push(this.master)
+        b.push(Option(this.master))
     }
   }
 
   def setMaster(list: List[A]) = {
-    println("befor setMaster's saveDetail")
-    this.check
+//    println("befor setMaster's saveDetail")
+//    this.check
     saveDetail
-    println("after setMaster's saveDetail")
-    this.check
+//    println("after setMaster's saveDetail")
+//    this.check
     this.selectNone
     this.master = list
     masterBind.foreach {
       b =>
-        println("in setmaster's for each")
-        b.push(this.master)
+//        println("in setmaster's for each")
+        b.push(Option(this.master))
     }
   }
   def getMaster=this.master
@@ -138,9 +132,9 @@ object SwingSupport extends Observing {
     listView.listData = masterDetail.getMaster
     val selectSupport = listView.singleSelect
     masterDetail.masterBind = Some(Bind({
-      list => selectSupport.updateKeepingSelect(list)
+      olist => selectSupport.updateKeepingSelect(olist.get)
     }, {
-      () => Nil
+      list=>Nil
     }))
 
     selectSupport.selectIndexChangedEvent.foreach {
