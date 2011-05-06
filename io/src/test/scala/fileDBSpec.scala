@@ -8,11 +8,11 @@ object FileDBSpec extends Specification {
     case class Person(name: String, age: Int)
     implicit val ser = new XStreamSerializer[Person]
 
-    implicit object personId extends HasId[Person, String] {
-      def getId(person: Person) = person.name
+    implicit object personId extends HasId[Person] {
+      def getId(person: Person) = person.name 
     }
 
-    val db = new FileDB[Person,String](new File("./testdb"))
+    val db = new FileDB[Person](new File("./testdb"))
     val person = Person("Jason", 32)
     db.put(person)
     val jason = db.get("Jason")

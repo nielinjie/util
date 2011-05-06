@@ -1,6 +1,7 @@
 package nielinjie
 package util.ui
 
+import _root_.nieinjie.util.ui.Bind
 import collection.mutable.ListBuffer
 
 class Model[A](value_ : A, val bind: Option[Bind[A]]) extends Changable[A] {
@@ -27,7 +28,7 @@ class Model[A](value_ : A, val bind: Option[Bind[A]]) extends Changable[A] {
 
 }
 
-case class Bind[A](val push: (Option[A] => Unit), val pull: (A => A))
+
 
 case class Selection[A](var value: Option[A], var index: Option[Int]) {
   def saveToMaster(master: List[A]): List[A] = {

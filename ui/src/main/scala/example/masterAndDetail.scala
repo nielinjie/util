@@ -2,6 +2,7 @@ package nielinjie
 package util.ui
 package example
 
+import _root_.nieinjie.util.ui.Bind
 import swing._
 import event._
 import reactive._

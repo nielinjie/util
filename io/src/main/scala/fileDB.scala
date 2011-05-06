@@ -4,14 +4,14 @@ package util.io
 
 import java.io.File
 
-class FileDB[A, I](val rootDir: File)(implicit hasId: HasId[A, I], serializer: Serializer[A]) {
+class FileDB[A](val rootDir: File)(implicit hasId: HasId[A], serializer: Serializer[A]) {
 
   import FileUtil._
 
   makeSureFolderExist(rootDir)
 
-  def get(id: I): Option[A] = {
-    val file = new File(rootDir, id.toString)
+  def get(id: String): Option[A] = {
+    val file = new File(rootDir, id)
     if (file.exists)
       Some(serializer.unSerialize(fromFile(file)))
     else
@@ -19,11 +19,11 @@ class FileDB[A, I](val rootDir: File)(implicit hasId: HasId[A, I], serializer: S
   }
 
   def put(a: A) = {
-    val file= new File(rootDir, hasId.getId(a).toString)
+    val file= new File(rootDir, hasId.getId(a))
     toFile(serializer.serialize(a),file)
   }
 }
 
-trait HasId[A, I] {
-  def getId(a: A): I
+trait HasId[A] {
+  def getId(a: A): String
 }

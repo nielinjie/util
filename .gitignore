@@ -3,6 +3,7 @@
 *~
 *.log
 *.swp
+io/testdb
 
 target/
 lib_managed/
