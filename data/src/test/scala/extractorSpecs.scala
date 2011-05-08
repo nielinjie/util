@@ -2,7 +2,6 @@ package nielinjie
 package util.data
 
 import org.specs2.mutable.Specification
-import org.specs2.matcher.MustExpectable._
 
 object ExtractorSpecs extends Specification {
   "extractor" in {
