@@ -1,6 +1,7 @@
 import sbt._
+import de.element34.sbteclipsify._
 
-class DataProject(info: ProjectInfo) extends DefaultProject(info) with IdeaProject {
+class DataProject(info: ProjectInfo) extends DefaultProject(info) with IdeaProject with Eclipsify{
   val scalaToolsSnapshots = "Scala-Tools Maven2 Snapshots Repository" at "http://scala-tools.org/repo-snapshots"
   val akkaRepository = "akka repository" at "http://www.scalablesolutions.se/akka/repository/"
   val ibiblioRepository = "ibiblio repository" at "http://www.ibiblio.org/maven/"

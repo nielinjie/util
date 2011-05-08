@@ -1,6 +1,7 @@
 import sbt._
+import de.element34.sbteclipsify._
 
-class UtilProject(info: ProjectInfo) extends ParentProject(info) with IdeaProject {
+class UtilProject(info: ProjectInfo) extends ParentProject(info) with IdeaProject with Eclipsify{
 
 
 
