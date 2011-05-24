@@ -1,7 +1,6 @@
 package nielinjie
 package util.data
 
-import java.io.File
 
 object Params {
   def lookUp[K](key: K) = {
@@ -12,58 +11,7 @@ object Params {
   }
 
 
-  sealed trait LookUpResult[A] {
-    def getOrFail(log2ResultF: String => A): A
 
-    def getOrFail(default: => A): A
-
-    def toOption: Option[A]
-
-    def map[B](f: A => B): LookUpResult[B]
-
-    def flatMap[B](f: A => LookUpResult[B]): LookUpResult[B]
-
-  }
-
-  case class Success[A](result: A) extends LookUpResult[A] {
-    def getOrFail(log2ResultF: String => A) = {
-      result
-    }
-
-    def toOption = Some(result)
-
-    def getOrFail(default: => A): A = result
-
-    def map[B](f: A => B): LookUpResult[B] = {
-      Success(f(this.result))
-    }
-
-    def flatMap[B](f: A => LookUpResult[B]): LookUpResult[B] = {
-
-      f(this.result) match {
-        case Success(r) => Success(r)
-        case f: Failed[_] => f
-
-      }
-    }
-
-  }
-
-  case class Failed[A](log: String) extends LookUpResult[A] {
-    def getOrFail(log2ResultF: String => A) = {
-      log2ResultF(log)
-    }
-
-    def toOption = Option.empty[A]
-
-    def getOrFail(default: => A): A = default
-
-    def map[B](f: A => B): LookUpResult[B] = Failed[B](this.log)
-
-    def flatMap[B](f: A => LookUpResult[B]): LookUpResult[B] = {
-      Failed[B](this.log)
-    }
-  }
 
   trait MapKind[K] {
     def get(key: K): Option[Any]
@@ -79,7 +27,6 @@ object Params {
   class LookingUp[K, A](val exece: LookUpFunction[K, A]) {
     def map[B](f: A => B): LookingUp[K, B] = {
       new LookingUp({
-
         m =>
           exece(m).map(f)
       })
@@ -223,23 +170,4 @@ object Params {
 
 }
 
-trait Converter[-A, C] {
-  def convert(a: A): C
-}
 
-object Converters {
-  implicit val anyToString = new Converter[Any, String] {
-    def convert(a: Any) = a.toString()
-
-  }
-  implicit val stringToFile = new Converter[String, File] {
-    def convert(a: String) = new File(a)
-  }
-  //TODO How to reuse converters in Predef?
-  implicit val stringToInt = new Converter[String, Int] {
-    def convert(a: String) = a.toInt
-  }
-  implicit val stringToBoolean = new Converter[String, Boolean] {
-    def convert(a: String) = a.toBoolean
-  }
-}
