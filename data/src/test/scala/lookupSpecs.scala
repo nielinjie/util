@@ -3,8 +3,12 @@ package util.data
 
 import org.specs2.mutable._
 import Params._
+import scalaz._
+import org.specs2.internal.scalaz.Failure
+import org.specs2.internal.scalaz.Digit._0
 
 object ParamsSpecs extends Specification {
+  import Scalaz._
   "params looking up works" in {
 
     val theMap = Map("a" -> 1, "b" -> 2)
@@ -13,15 +17,13 @@ object ParamsSpecs extends Specification {
       val lookingUp = lookUp("a").map {
         case a => (a.get, a.get)
       }
-      lookingUp.apply(theMap).toOption must equalTo(Some((1, 1)))
-
-      //lookingUp.apply(Map2).getOrFail(_ => (2, 2)) must equalTo((2, 2))
+      lookingUp.apply(theMap) must equalTo((1, 1).success)
     }
     "param lookup with for comprehension" in {
       val lookingUp = for {
         a <- lookUp("a")
       } yield (a.get)
-      lookingUp.apply(theMap) must equalTo(Success(1))
+      lookingUp.apply(theMap) must equalTo(1.success)
 
     }
     "params lookup with flatMap" in {
@@ -30,13 +32,13 @@ object ParamsSpecs extends Specification {
           case b => (b.get)
         }
       }
-      lookingUp.apply(theMap) must equalTo(Success(2))
+      lookingUp.apply(theMap) must equalTo(2.success)
       val lookingUp2 = lookUp("a").flatMap {
         case a => lookUp("b").map {
           case b => (a.get, b.get)
         }
       }
-      lookingUp2.apply(theMap) must equalTo(Success((1, 2)))
+      lookingUp2.apply(theMap) must equalTo((1, 2).success)
 
     }
     "params lookup with for comprehension" in {
@@ -44,12 +46,12 @@ object ParamsSpecs extends Specification {
         a <- lookUp("a");
         b <- lookUp("b")
       } yield (b.get)
-      lookingUp.apply(theMap) must equalTo(Success(2))
+      lookingUp.apply(theMap) must equalTo(2.success)
       val lookingUp2 = for {
         a <- lookUp("a");
         b <- lookUp("b")
       } yield (b.get, a.get)
-      lookingUp2.apply(theMap) must equalTo(Success((2, 1)))
+      lookingUp2.apply(theMap) must equalTo((2, 1).success)
     }
   }
   "guards" in {
@@ -61,13 +63,13 @@ object ParamsSpecs extends Specification {
         b <- lookUp("b");
         c <- lookUp("c")
       } yield (a, b, c)
-      lookingUp(theMap) must equalTo(Success(1, Some(2), None))
+      lookingUp(theMap) must equalTo((1, Some(2), None).success)
       val lookingUp2 = for {
         a <- lookUp("a").required;
         b <- lookUp("b");
         c <- lookUp("c").required
       } yield (a, b, c)
-      lookingUp2(theMap) must haveClass[Failed[_]]
+      lookingUp2(theMap).isFailure must beTrue
     }
     "default works" in {
       val lookingUp = for {
@@ -76,7 +78,7 @@ object ParamsSpecs extends Specification {
         c <- lookUp("c")
         d <- lookUp("d").as[Int].default(1)
       } yield (a, b, c, d)
-      lookingUp(theMap) must equalTo(Success(1, 2, None, 1))
+      lookingUp(theMap) must equalTo((1, 2, None, 1).success)
     }
     "as Instance guard" in {
       import Converters._
@@ -85,7 +87,7 @@ object ParamsSpecs extends Specification {
         b <- lookUp("b").required.as[Int];
         c <- lookUp("c").as[Int]
       } yield (a, b, c)
-      lookingUp(theMap) must equalTo(Success(("1", 2, None)))
+      lookingUp(theMap) must equalTo(("1", 2, None).success)
     }
     "to other type Instance guard" in {
       import Converters._
@@ -93,7 +95,7 @@ object ParamsSpecs extends Specification {
         a <- lookUp("a").required.as[Int].to[String];
         b <- lookUp("b").to[String]
       } yield (a, b)
-      lookingUp(theMap) must equalTo(Success(("1", Some("2"))))
+      lookingUp(theMap) must equalTo(("1", Some("2")).success)
     }
     "ensuring guard" in {
       val lookingUp = for {
@@ -102,22 +104,30 @@ object ParamsSpecs extends Specification {
         c <- lookUp("c")
         d <- lookUp("d").as[Int].default(1)
       } yield (a, b, c, d)
-      lookingUp(theMap) must haveClass[Failed[_]]
+      lookingUp(theMap).isFailure must beTrue
 
       val lookingUp2 = for {
         a <- lookUp("a").required.ensuring(x => x == 1)
         b <- lookUp("b").as[Int].ensuring(x => x == 1)
         d <- lookUp("d").as[Int].default(1)
       } yield (a, b, d)
-      lookingUp2(theMap) must haveClass[Failed[_]]
+      lookingUp2(theMap).isFailure must beTrue
 
        val lookingUp3 = for {
         a <- lookUp("a").required.ensuring(x => x == 1)
         b <- lookUp("b").as[Int].ensuring(x => x != 1)
         d <- lookUp("d").as[Int].default(1)
       } yield (a, b, d)
-      lookingUp3(theMap) must equalTo(Success((1,Some(2),1)))
+      lookingUp3(theMap) must equalTo((1,Some(2),1).success)
     }
+    "use as applicative functor" in {
+      ((lookUp("a").required)(theMap) |@|
+      (lookUp("b").required)(theMap)).apply((_, _)) must equalTo((1, 2).success)
 
+//      List("a","b").map {
+//        s =>
+//        lookUp(s).required.apply(theMap)
+//      }.reduceLeft(_ |@| _).apply((_, _)) must equalTo((1,2).success)
+    }
   }
 }

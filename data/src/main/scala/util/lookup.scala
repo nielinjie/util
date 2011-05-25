@@ -33,7 +33,6 @@ object Params {
     def map[B](f: A => B): LookingUp[K, B] = {
       new LookingUp({
         m =>
-          implicitly
            exece(m).map(f)
       })
     }
