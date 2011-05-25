@@ -1,12 +1,16 @@
 package nielinjie
 package util.data
 
+import scalaz._
 
 object Params {
+
+  import Scalaz._
+
   def lookUp[K](key: K) = {
     new WrappedLookingUp[K, Any]({
       x =>
-        Success(x.get(key))
+        success(x.get(key))
     })
   }
 
@@ -22,13 +26,15 @@ object Params {
   }
 
 
-  type LookUpFunction[K, A] = (MapKind[K] => LookUpResult[A])
+  type LookUpFunction[K, A] = (MapKind[K] => Validation[String,A])
 
   class LookingUp[K, A](val exece: LookUpFunction[K, A]) {
+    import scalaz.Functor._
     def map[B](f: A => B): LookingUp[K, B] = {
       new LookingUp({
         m =>
-          exece(m).map(f)
+          implicitly
+           exece(m).map(f)
       })
     }
 
@@ -37,11 +43,12 @@ object Params {
 
         m =>
           val result = exece(m)
-          result match {
-            case Success(s) =>
-              f(s).exece(m)
-            case Failed(log) => Failed[B](log)
-          }
+          result.fold( failure(_),f(_).exece(m))
+//          result match {
+//            case Success(s) =>
+//              f(s).exece(m)
+//            case Failed(log) => Failed[B](log)
+//          }
       })
     }
 
@@ -57,7 +64,7 @@ object Params {
         m =>
           this.exece(m).flatMap({
             result =>
-              Success(result.asInstanceOf[C])
+              success(result.asInstanceOf[C])
           })
       })
     }
@@ -68,8 +75,8 @@ object Params {
           this.exece(m).flatMap({
             result =>
               result match {
-                case a: A => Success(converter.convert(a))
-                case _ => Failed("type mismatch")
+                case a: A => success(converter.convert(a))
+                case _ => failure("type mismatch")
               }
           })
       })
@@ -84,9 +91,9 @@ object Params {
             result =>
               result match {
                 case a: A => {
-                  if (condition(a)) Success(a) else Failed(message)
+                  if (condition(a)) success(a) else failure(message)
                 }
-                case _ => Failed("type mismatch")
+                case _ => failure("type mismatch")
               }
           })
       })
@@ -99,7 +106,7 @@ object Params {
         m =>
           this.exece(m).flatMap({
             result =>
-              Success(
+              success(
                 result.map {
                   r => r.asInstanceOf[C]
                 })
@@ -114,10 +121,10 @@ object Params {
           this.exece(m).flatMap({
             result =>
               result match {
-                case a: Option[A] => Success(result.map {
+                case a: Option[A] => success(result.map {
                   r => converter.convert(r)
                 })
-                case _ => Failed("type mismatch")
+                case _ => failure("type mismatch")
               }
           })
       })
@@ -130,8 +137,8 @@ object Params {
           this.exece(m).flatMap({
             result =>
               result match {
-                case Some(a) => Success(a)
-                case None => Failed("required, but not found")
+                case Some(a) => success(a)
+                case None => failure("required, but not found")
               }
           })
       })
@@ -143,8 +150,8 @@ object Params {
           this.exece(m).flatMap({
             result =>
               result match {
-                case Some(a) => Success(a)
-                case None => Success(d)
+                case Some(a) => success(a)
+                case None => success(d)
               }
           })
       })
@@ -159,9 +166,9 @@ object Params {
             result =>
               result match {
                 case Some(a: A) => {
-                  if (condition(a)) Success(Some(a)) else Failed(message)
+                  if (condition(a)) success(Some(a)) else failure(message)
                 }
-                case None => Failed("None")
+                case None => failure("None")
               }
           })
       })

@@ -13,7 +13,7 @@ object ParamsSpecs extends Specification {
       val lookingUp = lookUp("a").map {
         case a => (a.get, a.get)
       }
-      lookingUp.apply(theMap) must equalTo(Success((1, 1)))
+      lookingUp.apply(theMap).toOption must equalTo(Some((1, 1)))
 
       //lookingUp.apply(Map2).getOrFail(_ => (2, 2)) must equalTo((2, 2))
     }
