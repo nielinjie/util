@@ -104,7 +104,6 @@ object Params {
       })
     }
 
-
     def to[C](implicit converter: Converter[A, C]): WrappedLookingUp[K, C] = {
       new WrappedLookingUp[K, C]({
         m =>
