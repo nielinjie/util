@@ -13,32 +13,11 @@ object ParamsSpecs extends Specification {
 
     val theMap = Map("a" -> 1, "b" -> 2)
     val Map2 = Map("aa" -> 1)
-    "param lookup with map" in {
-      val lookingUp = lookUp("a").map {
-        case a => (a.get, a.get)
-      }
-      lookingUp.apply(theMap) must equalTo((1, 1).success)
-    }
     "param lookup with for comprehension" in {
       val lookingUp = for {
         a <- lookUp("a")
       } yield (a.get)
       lookingUp.apply(theMap) must equalTo(1.success)
-
-    }
-    "params lookup with flatMap" in {
-      val lookingUp = lookUp("a").flatMap {
-        case a => lookUp("b").map {
-          case b => (b.get)
-        }
-      }
-      lookingUp.apply(theMap) must equalTo(2.success)
-      val lookingUp2 = lookUp("a").flatMap {
-        case a => lookUp("b").map {
-          case b => (a.get, b.get)
-        }
-      }
-      lookingUp2.apply(theMap) must equalTo((1, 2).success)
 
     }
     "params lookup with for comprehension" in {
@@ -55,7 +34,6 @@ object ParamsSpecs extends Specification {
     }
   }
   "guards" in {
-
     val theMap = Map("a" -> 1, "b" -> 2)
     "required guards" in {
       val lookingUp = for {
@@ -81,7 +59,7 @@ object ParamsSpecs extends Specification {
       lookingUp(theMap) must equalTo((1, 2, None, 1).success)
     }
     "as Instance guard" in {
-      import Converters._
+      import data._
       val lookingUp = for {
         a <- lookUp("a").required.as[Int].to[String];
         b <- lookUp("b").required.as[Int];
@@ -90,7 +68,7 @@ object ParamsSpecs extends Specification {
       lookingUp(theMap) must equalTo(("1", 2, None).success)
     }
     "to other type Instance guard" in {
-      import Converters._
+      import data._
       val lookingUp = for {
         a <- lookUp("a").required.as[Int].to[String];
         b <- lookUp("b").to[String]
@@ -123,11 +101,6 @@ object ParamsSpecs extends Specification {
     "use as applicative functor" in {
       ((lookUp("a").required)(theMap) |@|
       (lookUp("b").required)(theMap)).apply((_, _)) must equalTo((1, 2).success)
-
-//      List("a","b").map {
-//        s =>
-//        lookUp(s).required.apply(theMap)
-//      }.reduceLeft(_ |@| _).apply((_, _)) must equalTo((1,2).success)
     }
   }
 }

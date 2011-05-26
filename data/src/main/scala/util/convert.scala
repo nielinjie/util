@@ -3,23 +3,10 @@ package util.data
 
 import java.io.File
 
-trait Converter[-A, C] {
-  def convert(a: A): C
-}
-
-object Converters {
-  implicit val anyToString = new Converter[Any, String] {
-    def convert(a: Any) = a.toString()
-
-  }
-  implicit val stringToFile = new Converter[String, File] {
-    def convert(a: String) = new File(a)
-  }
-  //TODO How to reuse converters in Predef?
-  implicit val stringToInt = new Converter[String, Int] {
-    def convert(a: String) = a.toInt
-  }
-  implicit val stringToBoolean = new Converter[String, Boolean] {
-    def convert(a: String) = a.toBoolean
-  }
+package object data {
+  type Converter[-A, C] = Function[A, C]
+  implicit val any2String = {x : Any => x.toString()}
+  implicit val string2File = {x : String => new File(x)}
+  implicit val string2Int = {x:String => x.toInt}
+  implicit val string2Boolean = {x: String => x.toBoolean}
 }

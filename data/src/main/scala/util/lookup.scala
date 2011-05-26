@@ -6,7 +6,7 @@ import scalaz._
 object Params {
 
   import Scalaz._
-
+  import data._
   def lookUp[K](key: K) = {
     new WrappedLookingUp[K, Any]({
       x =>
@@ -14,22 +14,18 @@ object Params {
     })
   }
 
-
-
-
-  trait MapKind[K] {
+  trait MapLike[K] {
     def get(key: K): Option[Any]
   }
 
-  implicit def map2Kind[K](map: Map[K, Any]): MapKind[K] = new MapKind[K] {
+  implicit def map2MapLike[K](map: Map[K, Any]): MapLike[K] = new MapLike[K] {
     def get(key: K): Option[Any] = map.get(key)
   }
 
 
-  type LookUpFunction[K, A] = (MapKind[K] => Validation[String,A])
+  type LookUpFunction[K, A] = (MapLike[K] => Validation[String,A])
 
   class LookingUp[K, A](val exece: LookUpFunction[K, A]) {
-    import scalaz.Functor._
     def map[B](f: A => B): LookingUp[K, B] = {
       new LookingUp({
         m =>
@@ -43,15 +39,10 @@ object Params {
         m =>
           val result = exece(m)
           result.fold( failure(_),f(_).exece(m))
-//          result match {
-//            case Success(s) =>
-//              f(s).exece(m)
-//            case Failed(log) => Failed[B](log)
-//          }
       })
     }
 
-    def apply(map: MapKind[K]) = {
+    def apply(map: MapLike[K]) = {
       exece(map)
     }
 
@@ -74,7 +65,7 @@ object Params {
           this.exece(m).flatMap({
             result =>
               result match {
-                case a: A => success(converter.convert(a))
+                case a: A => success(converter(a))
                 case _ => failure("type mismatch")
               }
           })
@@ -121,7 +112,7 @@ object Params {
             result =>
               result match {
                 case a: Option[A] => success(result.map {
-                  r => converter.convert(r)
+                  r => converter(r)
                 })
                 case _ => failure("type mismatch")
               }
