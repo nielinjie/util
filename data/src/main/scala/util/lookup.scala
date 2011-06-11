@@ -7,51 +7,60 @@ object Params {
 
   import Scalaz._
   import data._
+
   def lookUp[K](key: K) = {
-    new WrappedLookingUp[K, Any]({
+    new WrappedLookingUp[K, Any, Any]({
       x =>
         success(x.get(key))
     })
   }
+  class LP[V] {
+    def apply[K](key:K)=new WrappedLookingUp[K,V, V]({
+        x =>
+          success(x.get(key))
+      })
+  }
+  def lookUpFor[V] = new LP[V]
 
-  trait MapLike[K] {
-    def get(key: K): Option[Any]
+  trait MapLike[K, V] {
+    def get(key: K): Option[V]
   }
 
-  implicit def map2MapLike[K](map: Map[K, Any]): MapLike[K] = new MapLike[K] {
-    def get(key: K): Option[Any] = map.get(key)
+  implicit def map2MapLike[K, A](map: Map[K, A]): MapLike[K, A] = new MapLike[K, A] {
+    def get(key: K): Option[A] = map.get(key)
   }
 
 
-  type LookUpFunction[K, A] = (MapLike[K] => Validation[String,A])
+  type LookUpFunction[K, A, B] = (MapLike[K, A] => Validation[String, B])
 
-  class LookingUp[K, A](val exece: LookUpFunction[K, A]) {
-    def map[B](f: A => B): LookingUp[K, B] = {
+  class LookingUp[K, A, B](val exece: LookUpFunction[K, A, B]) {
+    lu =>
+    def map[C](f: B => C): LookingUp[K, A, C] = {
       new LookingUp({
-        m =>
-           exece(m).map(f)
+        m: MapLike[K, A] =>
+          exece(m).map(f)
       })
     }
 
-    def flatMap[B](f: A => LookingUp[K, B]): LookingUp[K, B] = {
+    def flatMap[C](f: B => LookingUp[K, A, C]): LookingUp[K, A, C] = {
       new LookingUp({
 
-        m =>
-          val result = exece(m)
-          result.fold( failure(_),f(_).exece(m))
+        m: MapLike[K, A] =>
+          val result = lu.exece(m)
+          result.fold(failure(_), f(_).exece(m))
       })
     }
 
-    def apply(map: MapLike[K]) = {
+    def apply(map: MapLike[K, A]) = {
       exece(map)
     }
 
   }
 
-  class SimpleLookingUp[K, A](exece: LookUpFunction[K, A]) extends LookingUp[K, A](exece) {
-    def as[C]: SimpleLookingUp[K, C] = {
-      new SimpleLookingUp[K, C]({
-        m =>
+  class SimpleLookingUp[K, A, B](exece: LookUpFunction[K, A, B]) extends LookingUp[K, A, B](exece) {
+    def as[C <: B]: SimpleLookingUp[K, A, C] = {
+      new SimpleLookingUp[K, A, C]({
+        m: MapLike[K, A] =>
           this.exece(m).flatMap({
             result =>
               success(result.asInstanceOf[C])
@@ -59,24 +68,24 @@ object Params {
       })
     }
 
-    def to[C](implicit converter: Converter[A, C]): SimpleLookingUp[K, C] = {
-      new SimpleLookingUp[K, C]({
-        m =>
+    def to[C](implicit converter: Converter[B, C]): SimpleLookingUp[K, A, C] = {
+      new SimpleLookingUp[K, A, C]({
+        m: MapLike[K, A] =>
           this.exece(m).flatMap({
             result =>
               result match {
-                case a: A => success(converter(a))
+                case a: B => success(converter(a))
                 case _ => failure("type mismatch")
               }
           })
       })
     }
 
-    def ensuring(condition: (A) => Boolean): SimpleLookingUp[K, A] = ensuring(condition, "ensuring faild")
+    def ensuring(condition: (A) => Boolean): SimpleLookingUp[K, A, A] = ensuring(condition, "ensuring faild")
 
-    def ensuring(condition: (A) => Boolean, message: String): SimpleLookingUp[K, A] = {
-      new SimpleLookingUp[K, A]({
-        m =>
+    def ensuring(condition: (A) => Boolean, message: String): SimpleLookingUp[K, A, A] = {
+      new SimpleLookingUp[K, A, A]({
+        m: MapLike[K, A] =>
           this.exece(m).flatMap({
             result =>
               result match {
@@ -90,11 +99,12 @@ object Params {
     }
   }
 
-  class WrappedLookingUp[K, A](exece: LookUpFunction[K, Option[A]]) extends LookingUp[K, Option[A]](exece) {
-    def as[C]: WrappedLookingUp[K, C] = {
-      new WrappedLookingUp[K, C]({
-        m =>
-          this.exece(m).flatMap({
+  class WrappedLookingUp[K, A, B](exece: LookUpFunction[K, A, Option[B]]) extends LookingUp[K, A, Option[B]](exece) {
+    wlu =>
+    def as[C <: A]: WrappedLookingUp[K, A, C] = {
+      new WrappedLookingUp[K, A, C]({
+        m: MapLike[K, A] =>
+          wlu.exece(m).flatMap({
             result =>
               success(
                 result.map {
@@ -105,13 +115,13 @@ object Params {
     }
 
 
-    def to[C](implicit converter: Converter[A, C]): WrappedLookingUp[K, C] = {
-      new WrappedLookingUp[K, C]({
-        m =>
-          this.exece(m).flatMap({
+    def to[C](implicit converter: Converter[B, C]): WrappedLookingUp[K, A, C] = {
+      new WrappedLookingUp[K, A, C]({
+        m: MapLike[K, A] =>
+          wlu.exece(m).flatMap({
             result =>
               result match {
-                case a: Option[A] => success(result.map {
+                case a: Option[B] => success(result.map {
                   r => converter(r)
                 })
                 case _ => failure("type mismatch")
@@ -121,10 +131,10 @@ object Params {
     }
 
 
-    def required: SimpleLookingUp[K, A] = {
-      new SimpleLookingUp[K, A]({
-        m =>
-          this.exece(m).flatMap({
+    def required: SimpleLookingUp[K, A, B] = {
+      new SimpleLookingUp[K, A, B]({
+        m: MapLike[K, A] =>
+          wlu.exece(m).flatMap({
             result =>
               result match {
                 case Some(a) => success(a)
@@ -134,10 +144,10 @@ object Params {
       })
     }
 
-    def default(d: A): SimpleLookingUp[K, A] = {
-      new SimpleLookingUp[K, A]({
-        m =>
-          this.exece(m).flatMap({
+    def default(d: B): SimpleLookingUp[K, A, B] = {
+      new SimpleLookingUp[K, A, B]({
+        m: MapLike[K, A] =>
+          wlu.exece(m).flatMap({
             result =>
               result match {
                 case Some(a) => success(a)
@@ -147,15 +157,15 @@ object Params {
       })
     }
 
-    def ensuring(condition: (A) => Boolean): WrappedLookingUp[K, A] = ensuring(condition, "ensuring faild")
+    def ensuring(condition: (B) => Boolean): WrappedLookingUp[K, A,B] = ensuring(condition, "ensuring faild")
 
-    def ensuring(condition: (A) => Boolean, message: String): WrappedLookingUp[K, A] = {
-      new WrappedLookingUp[K, A]({
-        m =>
-          this.exece(m).flatMap({
+    def ensuring(condition: (B) => Boolean, message: String): WrappedLookingUp[K, A, B] = {
+      new WrappedLookingUp[K, A, B]({
+        m: MapLike[K, A] =>
+          wlu.exece(m).flatMap({
             result =>
               result match {
-                case Some(a: A) => {
+                case Some(a: B) => {
                   if (condition(a)) success(Some(a)) else failure(message)
                 }
                 case None => failure("None")

@@ -6,9 +6,12 @@ import Params._
 import scalaz._
 import org.specs2.internal.scalaz.Failure
 import org.specs2.internal.scalaz.Digit._0
+import scala.Either
 
 object ParamsSpecs extends Specification {
+
   import Scalaz._
+
   "params looking up works" in {
 
     val theMap = Map("a" -> 1, "b" -> 2)
@@ -91,16 +94,49 @@ object ParamsSpecs extends Specification {
       } yield (a, b, d)
       lookingUp2(theMap).isFailure must beTrue
 
-       val lookingUp3 = for {
+      val lookingUp3 = for {
         a <- lookUp("a").required.ensuring(x => x == 1)
         b <- lookUp("b").as[Int].ensuring(x => x != 1)
         d <- lookUp("d").as[Int].default(1)
       } yield (a, b, d)
-      lookingUp3(theMap) must equalTo((1,Some(2),1).success)
-    }
-    "use as applicative functor" in {
-      ((lookUp("a").required)(theMap) |@|
-      (lookUp("b").required)(theMap)).apply((_, _)) must equalTo((1, 2).success)
+      lookingUp3(theMap) must equalTo((1, Some(2), 1).success)
     }
   }
+  "use as applicative functor, (not so useful)" in {
+    val theMap = Map("a" -> 1, "b" -> 2)
+    val lookingUp = for {
+      a <- lookUp("a").required.ensuring(x => x != 1)
+      b <- lookUp("b").as[Int].default(1);
+      c <- lookUp("c")
+      d <- lookUp("d").as[Int].default(1)
+    } yield (a, b, c, d)
+    ((lookUp("a").required)(theMap) |@|
+      (lookUp("b").required)(theMap)).apply((_, _)) must equalTo((1, 2).success)
+  }
+
+  "value type safe" in {
+    val theMap = Map("1" -> 10, "2" -> 20)
+    //val theMap = Map("1" -> 10, "2" -> "20") this will no compile because value type safe
+
+    val lookingUp = for {
+      a <- lookUpFor[Int]("1").required
+      b <- lookUpFor[Int]("2").required
+    } yield (a, b)
+    lookingUp(theMap) must equalTo((10, 20).success)
+  }
+
+  "lookup by projection function" in {
+
+  }
+
+//TODO todo?
+//  "multiple lookuping" in {
+//    val theMultipleMap = List("1" -> 10, "1" -> 100, "2" -> 20)
+//    val multiLookingUp = for {
+//      a <- lookUpFor[Int]("1").number(2)
+//      b <- lookUpFor[Int]("2").one
+//    } yield (a, b)
+//    multiLookingUp(theMultipleMap) mst equalTo((List(10, 100), 20).success)
+//  }
+
 }
