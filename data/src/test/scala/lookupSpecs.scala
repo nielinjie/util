@@ -125,18 +125,37 @@ object ParamsSpecs extends Specification {
     lookingUp(theMap) must equalTo((10, 20).success)
   }
 
-  "lookup by projection function" in {
+  "lookup in xml with projection function" in {
+    import xml._
+    val x = <a>
+      <b attr="c">bText</b>
+    </a>
+    implicit def xmlProjection: (Elem, Elem => NodeSeq) => Option[String] = {
+      (x, f) =>
+        f(x) match {
+          case ns if !(ns.isEmpty) => Some(ns.text)
+          case _ => None
+        }
+    }
+    def lookUpXml(f: Elem => NodeSeq) = lookUpFor[String](f)
+    val lookingUp = for {
+      b <- lookUpXml(_ \ "b").required
+      a <- lookUpXml(_ \ "b" \ "@attr").required
+      c <- lookUpXml(_ \ "c")
+      d <- lookUpXml(_ \ "d")
+    } yield (b, a, c, d)
+    lookingUp(x) must equalTo(("bText", "c", None, None).success)
 
   }
 
-//TODO todo?
-//  "multiple lookuping" in {
-//    val theMultipleMap = List("1" -> 10, "1" -> 100, "2" -> 20)
-//    val multiLookingUp = for {
-//      a <- lookUpFor[Int]("1").number(2)
-//      b <- lookUpFor[Int]("2").one
-//    } yield (a, b)
-//    multiLookingUp(theMultipleMap) mst equalTo((List(10, 100), 20).success)
-//  }
+  //TODO todo?
+  //  "multiple lookuping" in {
+  //    val theMultipleMap = List("1" -> 10, "1" -> 100, "2" -> 20)
+  //    val multiLookingUp = for {
+  //      a <- lookUpFor[Int]("1").number(2)
+  //      b <- lookUpFor[Int]("2").one
+  //    } yield (a, b)
+  //    multiLookingUp(theMultipleMap) mst equalTo((List(10, 100), 20).success)
+  //  }
 
 }

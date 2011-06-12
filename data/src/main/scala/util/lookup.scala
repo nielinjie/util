@@ -14,22 +14,41 @@ object Params {
         success(x.get(key))
     })
   }
+
   class LP[V] {
-    def apply[K](key:K)=new WrappedLookingUp[K,V, V]({
-        x =>
-          success(x.get(key))
-      })
+    def apply[K](key: K) = new WrappedLookingUp[K, V, V]({
+      x =>
+        success(x.get(key))
+    })
   }
+
   def lookUpFor[V] = new LP[V]
 
   trait MapLike[K, V] {
     def get(key: K): Option[V]
   }
 
-  implicit def map2MapLike[K, A](map: Map[K, A]): MapLike[K, A] = new MapLike[K, A] {
-    def get(key: K): Option[A] = map.get(key)
-  }
+//  implicit def map2MapLike[K, A](map: Map[K, A]): MapLike[K, A] = new MapLike[K, A] {
+//    def get(key: K): Option[A] = map.get(key)
+//  }
+//
+//
+//  import xml._
+//
+//  implicit def xml2MapLike(xml: Elem): MapLike[(Elem) => NodeSeq, String] = new MapLike[(Elem) => NodeSeq, String] {
+//    def get(function: (Elem) => NodeSeq): Option[String] = {
+//      val nodeSeq = function.apply(xml)
+//      if (nodeSeq.isEmpty) {
+//        None
+//      } else {
+//        Some(nodeSeq.text)
+//      }
+//    }
+//  }
 
+  implicit def mapProjectFunction[K, A]: (Map[K, A], K) => Option[A] = {
+    (m, k) => m.get(k)
+  }
 
   type LookUpFunction[K, A, B] = (MapLike[K, A] => Validation[String, B])
 
@@ -51,10 +70,16 @@ object Params {
       })
     }
 
-    def apply(map: MapLike[K, A]) = {
+//    def apply(map: MapLike[K, A]) = {
+//      exece(map)
+//    }
+
+    def apply[M](m: M)(implicit projectionFunction: (M, K) => Option[A]) = {
+      val map = new MapLike[K, A] {
+        def get(key: K): Option[A] = projectionFunction(m, key)
+      }
       exece(map)
     }
-
   }
 
   class SimpleLookingUp[K, A, B](exece: LookUpFunction[K, A, B]) extends LookingUp[K, A, B](exece) {
@@ -157,7 +182,7 @@ object Params {
       })
     }
 
-    def ensuring(condition: (B) => Boolean): WrappedLookingUp[K, A,B] = ensuring(condition, "ensuring faild")
+    def ensuring(condition: (B) => Boolean): WrappedLookingUp[K, A, B] = ensuring(condition, "ensuring faild")
 
     def ensuring(condition: (B) => Boolean, message: String): WrappedLookingUp[K, A, B] = {
       new WrappedLookingUp[K, A, B]({
