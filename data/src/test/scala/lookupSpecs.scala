@@ -4,8 +4,6 @@ package util.data
 import org.specs2.mutable._
 import Params._
 import scalaz._
-import org.specs2.internal.scalaz.Failure
-import org.specs2.internal.scalaz.Digit._0
 import scala.Either
 
 object ParamsSpecs extends Specification {
