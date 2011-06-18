@@ -4,6 +4,10 @@ package util.ui
 import _root_.nieinjie.util.ui.Bind
 import collection.mutable.ListBuffer
 
+import scalaz._
+import Scalaz._
+
+
 class Model[A](value_ : A, val bind: Option[Bind[A]]) extends Changable[A] {
   private var value: A = value_
 
@@ -13,7 +17,7 @@ class Model[A](value_ : A, val bind: Option[Bind[A]]) extends Changable[A] {
     this.value = newValue
     this.bind.foreach {
       b =>
-        b.push(Option(this.value))
+        b.push((this.value).success)
     }
     notifyChangeListener(oldValue, this.value)
   }
@@ -51,7 +55,7 @@ class MasterDetail[A](_master: List[A]) {
   }
 
   var selection: Selection[A] = new Selection[A](None, None)
-  var detailBind: Option[Bind[A]] = None
+  var detailBind: Option[Bind[Option[A]]] = None
   var masterBind: Option[Bind[List[A]]] = None
 
   def selectNone() = {
@@ -71,7 +75,7 @@ class MasterDetail[A](_master: List[A]) {
     this.selection.value = index.map(master.apply(_))
     this.detailBind.foreach {
       b =>
-        b.push(this.selection.value)
+        b.push(this.selection.value.success)
     }
 
   }
@@ -81,13 +85,13 @@ class MasterDetail[A](_master: List[A]) {
     this.detailBind.foreach {
       b =>
         if (this.selection.selected) {
-          this.selection.value = Some(b.pull(this.selection.value.get))
+          this.selection.value = b.pull(this.selection.value)
         }
     }
     this.master = this.selection.saveToMaster(this.master)
     masterBind.foreach {
       b =>
-        b.push(Option(this.master))
+        b.push((this.master).success)
     }
   }
 
@@ -102,7 +106,7 @@ class MasterDetail[A](_master: List[A]) {
     masterBind.foreach {
       b =>
 //        println("in setmaster's for each")
-        b.push(Option(this.master))
+        b.push(this.master.success)
     }
   }
   def getMaster=this.master
@@ -133,7 +137,8 @@ object SwingSupport extends Observing {
     listView.listData = masterDetail.getMaster
     val selectSupport = listView.singleSelect
     masterDetail.masterBind = Some(Bind({
-      olist => selectSupport.updateKeepingSelect(olist.get)
+      //TODO add some logic to handle error?
+      olist => olist.fold({x=>},selectSupport.updateKeepingSelect(_))
     }, {
       list=>Nil
     }))
