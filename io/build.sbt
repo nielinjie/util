@@ -10,6 +10,8 @@ resolvers += ScalaToolsSnapshots
 
 resolvers += "wso" at "http://dist.wso2.org/maven2/"
 
+
+
 libraryDependencies += "org.specs2" %% "specs2" % "latest.release" % "test"
 
 libraryDependencies ++= Seq(
