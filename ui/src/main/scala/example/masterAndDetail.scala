@@ -2,7 +2,6 @@ package nielinjie
 package util.ui
 package example
 
-import _root_.nieinjie.util.ui.Bind
 import swing._
 import event._
 import reactive._
@@ -39,34 +38,41 @@ object MasterAndDetail extends SimpleSwingApplication with Observing {
 
   val persons = List(Person(32, List(Name("nie", "jason"), Name("NIE", "JASON"))), Person(27, List(Name("xu", "elsa"), Name("XU", "234"))))
   val mdPerson = new MasterDetail(persons)
-  mdPerson.detailBind = Some(Bind(
-  {
-    case Some(a) => {
-      mdName.setMaster(a.names)
-      textAge.text = a.age.toString
+
+  import Bind._
+
+  mdPerson.detailBind = Some(Bind(noErrorHandle({
+    a: Option[Person] => a match {
+      case o@Some(aa) => {
+        mdName.setMaster(aa.names)
+        textAge.text = aa.age.toString
+      }
+      //TODO logic when None
+      case o@None =>
     }
-    case None => {
-      //TODO disable when nothing selected
-    }
-  }, {
-   person => {
+  })
+  , {
+    person => {
       mdName.saveDetail
-      Person(textAge.text.toInt, mdName.getMaster)
+      Some(Person(textAge.text.toInt, mdName.getMaster))
     }
   }
   ))
 
   val mdName = new MasterDetail[Name](Nil)
-  mdName.detailBind = Some(Bind({
-    case Some(n) => {
-      textF.text = n.first
-      textL.text = n.last
+  mdName.detailBind = Some(Bind(noErrorHandle({
+    o: Option[Name] => o match {
+      case Some(n) => {
+        textF.text = n.first
+        textL.text = n.last
+      }
+      case None => {
+        //TODO disable when nothe selected
+      }
     }
-    case None => {
-      //TODO disable when nothe selected
-    }
-  }, {
-    name=>Name(textF.text, textL.text)
+  })
+  , {
+    name => Some(Name(textF.text, textL.text))
   }))
 
   val textAge = new TextField("age")
