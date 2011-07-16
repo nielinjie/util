@@ -2,7 +2,6 @@ package nielinjie
 package util.ui
 package example
 
-import _root_.nieinjie.util.ui.Bind
 import swing._
 import event._
 import reactive._
@@ -39,13 +38,18 @@ object MasterAndDetail extends SimpleSwingApplication with Observing {
 
   val persons = List(Person(32, List(Name("nie", "jason"), Name("NIE", "JASON"))), Person(27, List(Name("xu", "elsa"), Name("XU", "234"))))
   val mdPerson = new MasterDetail(persons)
-  mdPerson.detailBind = Some(Bind(
-  Bind.noErrorHandle({
-    case Some(aa) => {
-      mdName.setMaster(aa.names)
-      textAge.text = aa.age.toString
+
+  import Bind._
+
+  mdPerson.detailBind = Some(Bind(noErrorHandle({
+    a: Option[Person] => a match {
+      case o@Some(aa) => {
+        mdName.setMaster(aa.names)
+        textAge.text = aa.age.toString
+      }
+      //TODO logic when None
+      case o@None =>
     }
-    //TODO logic when None
   })
   , {
     person => {
@@ -56,15 +60,18 @@ object MasterAndDetail extends SimpleSwingApplication with Observing {
   ))
 
   val mdName = new MasterDetail[Name](Nil)
-  mdName.detailBind = Some(Bind.noErrorHandle({
-    case Some(n) => {
-      textF.text = n.first
-      textL.text = n.last
+  mdName.detailBind = Some(Bind(noErrorHandle({
+    o: Option[Name] => o match {
+      case Some(n) => {
+        textF.text = n.first
+        textL.text = n.last
+      }
+      case None => {
+        //TODO disable when nothe selected
+      }
     }
-    case None => {
-      //TODO disable when nothe selected
-    }
-  }, {
+  })
+  , {
     name => Some(Name(textF.text, textL.text))
   }))
 
