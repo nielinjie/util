@@ -7,13 +7,16 @@ import event._
 import reactive._
 
 object MasterAndDetail extends SimpleSwingApplication with Observing {
+  import util.ui.event.EventSupport._
   def top = new MainFrame {
     title = "First Swing App"
     contents = new MigPanel("fill,debug", "[fill,:300:][fill,:300:]", "[fill,:400:]") {
-      add(new MigPanel("fill,debug", "[fill,:300:]", "[fill,:400:][][fill,:400:][][]") {
+      add(new MigPanel("fill,debug", "[fill,:300:]", "[fill,:400:][][][fill,:400:][][][]") {
         add(listPerson, "wrap")
+        add(onlyJasonCheckBox,"wrap")
         add(textAge, "wrap")
         add(listName, "wrap")
+        add(onlyFirstCheckBox,"wrap")
         add(textF, "wrap")
         add(textL, "")
       }, "")
@@ -23,6 +26,21 @@ object MasterAndDetail extends SimpleSwingApplication with Observing {
     }
 
   }
+  val onlyJasonCheckBox=new CheckBox("only Jason?")
+  onlyJasonCheckBox.toggled.foreach({b=>mdPerson.setFilter((if (b) Some(onlyJasonFilter) else None))})
+   val onlyJasonFilter=new Filter[Person]{
+    def filter(person:Person)={
+      person.age>30
+    }
+   }
+
+   val onlyFirstCheckBox=new CheckBox("only First?")
+  onlyFirstCheckBox.toggled.foreach({b=>mdName.setFilter((if (b) Some(onlyFirstFilter) else None))})
+   val onlyFirstFilter=new Filter[Name]{
+     def filter(name:Name) ={
+       name.first.startsWith("k")
+     }
+   }
 
   reactions += {
 
