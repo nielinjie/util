@@ -126,6 +126,11 @@ trait Filter[A] {
       def filter(obj: A) = self.filter(obj) && b.filter(obj)
     }
   }
+  def or(b: Filter[A]) = {
+    new Filter[A] {
+      def filter(obj: A) = self.filter(obj) || b.filter(obj)
+    }
+  }
 }
 
 import scala.swing._

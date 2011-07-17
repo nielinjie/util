@@ -1,7 +1,7 @@
 package nielinjie
 package util.ui
 
-import swing.{RadioButton, TextComponent, Component}
+import swing.{ToggleButton, RadioButton, TextComponent, Component}
 
 object WidgetUtil {
   def group(components: Component*) = new WidgetGroup(components)
@@ -15,7 +15,8 @@ object WidgetUtil {
     def clean = {
       components.foreach {
         case t: TextComponent => t.text = ""
-        case r: RadioButton => r.selected = false
+        case r: ToggleButton => r.selected = false
+        case _ =>
       }
     }
 
