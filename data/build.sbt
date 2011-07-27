@@ -4,7 +4,7 @@ version := "1.0"
 
 organization := "nielinjie"
 
-scalaVersion := "2.8.1"
+scalaVersion := "2.9.0-1"
 
 resolvers += ScalaToolsSnapshots
 
