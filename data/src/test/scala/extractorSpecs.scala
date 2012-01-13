@@ -69,3 +69,6 @@ object Bar {
 object & {
   def unapply(a: Any): Option[(Any, Any)] = Some(a, a)
 }
+object also {
+  
+}

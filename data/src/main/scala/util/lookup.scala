@@ -28,24 +28,6 @@ object Params {
     def get(key: K): Option[V]
   }
 
-//  implicit def map2MapLike[K, A](map: Map[K, A]): MapLike[K, A] = new MapLike[K, A] {
-//    def get(key: K): Option[A] = map.get(key)
-//  }
-//
-//
-//  import xml._
-//
-//  implicit def xml2MapLike(xml: Elem): MapLike[(Elem) => NodeSeq, String] = new MapLike[(Elem) => NodeSeq, String] {
-//    def get(function: (Elem) => NodeSeq): Option[String] = {
-//      val nodeSeq = function.apply(xml)
-//      if (nodeSeq.isEmpty) {
-//        None
-//      } else {
-//        Some(nodeSeq.text)
-//      }
-//    }
-//  }
-
   implicit def mapProjectFunction[K, A]: (Map[K, A], K) => Option[A] = {
     (m, k) => m.get(k)
   }
@@ -69,10 +51,6 @@ object Params {
           result.fold(failure(_), f(_).exece(m))
       })
     }
-
-//    def apply(map: MapLike[K, A]) = {
-//      exece(map)
-//    }
 
     def apply[M](m: M)(implicit projectionFunction: (M, K) => Option[A]) = {
       val map = new MapLike[K, A] {
@@ -98,27 +76,19 @@ object Params {
         m: MapLike[K, A] =>
           this.exece(m).flatMap({
             result =>
-              result match {
-                case a: B => success(converter(a))
-                case _ => failure("type mismatch")
-              }
+              success(converter(result))
           })
       })
     }
 
-    def ensuring(condition: (A) => Boolean): SimpleLookingUp[K, A, A] = ensuring(condition, "ensuring faild")
+    def ensuring(condition: (B) => Boolean): SimpleLookingUp[K, A, B] = ensuring(condition, "ensuring faild")
 
-    def ensuring(condition: (A) => Boolean, message: String): SimpleLookingUp[K, A, A] = {
-      new SimpleLookingUp[K, A, A]({
+    def ensuring(condition: (B) => Boolean, message: String): SimpleLookingUp[K, A, B] = {
+      new SimpleLookingUp[K, A, B]({
         m: MapLike[K, A] =>
           this.exece(m).flatMap({
             result =>
-              result match {
-                case a: A => {
-                  if (condition(a)) success(a) else failure(message)
-                }
-                case _ => failure("type mismatch")
-              }
+              if (condition(result)) success(result) else failure(message)
           })
       })
     }
@@ -139,7 +109,6 @@ object Params {
       })
     }
 
-
     def to[C](implicit converter: Converter[B, C]): WrappedLookingUp[K, A, C] = {
       new WrappedLookingUp[K, A, C]({
         m: MapLike[K, A] =>
@@ -154,7 +123,6 @@ object Params {
           })
       })
     }
-
 
     def required: SimpleLookingUp[K, A, B] = {
       new SimpleLookingUp[K, A, B]({

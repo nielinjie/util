@@ -5,7 +5,7 @@ import org.specs2.mutable.Specification
 
 object HelpersSpecs extends Specification {
   "doto" in {
-    import data._
+    import Helper._
     val i = "what"
     var change: Boolean = false
     i.doto {

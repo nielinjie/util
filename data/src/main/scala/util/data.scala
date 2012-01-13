@@ -18,7 +18,10 @@ package object data {
     x: String => x.toBoolean
   }
 
-  implicit def helpersWrap[A](obj: A) = new {
+}
+
+object Helper {
+  class Wrapped[A](val obj: A) {
     def doto(f: A => Unit): A = {
       val re = obj
       f(re)
@@ -29,4 +32,10 @@ package object data {
       f(obj)
     }
   }
+  implicit def helpersWrap[A](obj: A) = new Wrapped(obj)
 }
+
+
+
+
+
