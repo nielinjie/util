@@ -4,6 +4,7 @@ package util.io
 import java.io.File
 import java.io.FileWriter
 import scala.io.Source
+import scalax.io.Resource
 
 object FileUtil {
   def makeSureFolderExist(folder: File): Unit = {
@@ -14,24 +15,23 @@ object FileUtil {
       folder.mkdirs
     }
   }
-
+  //  /**
+  //   * use scala-io
+  //   * output.write("hello")
+  //   */
+  //  @deprecated("use scala-io","1.0")
   def toFile(text: String, file: File) {
     if (!file.exists) {
       makeSureFolderExist(file.getParentFile)
     }
-    val fw = new FileWriter(file)
-    try {
-      fw.write(text)
-    } catch {
-      case e => e.printStackTrace()
-    }
-    finally {
-      fw.close
-    }
-
+    Resource.fromFile(file).write(text)
   }
-
+  //  /**
+  //   * use scala-io
+  //   * input.slurpString(Codec.UTF8)
+  //   */
+  //  @deprecated("use scala-io","1.0")
   def fromFile(file: File): String = {
-    Source.fromFile(file).mkString
+    Resource.fromFile(file).slurpString()
   }
 }
