@@ -11,3 +11,4 @@ trait Log extends Logging {
   def warn[A: Show](any: => A) = logger.warn(any.shows)
   def error[A: Show](any: => A) = logger.error(any.shows)
 }
+trait Logger extends Logging

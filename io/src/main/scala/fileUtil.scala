@@ -34,4 +34,10 @@ object FileUtil {
   def fromFile(file: File): String = {
     Resource.fromFile(file).slurpString()
   }
+
+  def recursiveListFiles(f: File): List[File] = {
+    val these = f.listFiles.toList
+    (these ++ these.filter(_.isDirectory).flatMap(recursiveListFiles))
+  }
+
 }

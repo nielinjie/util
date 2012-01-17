@@ -16,6 +16,7 @@ libraryDependencies ++= Seq(
 	"org.slf4j" % "slf4j-log4j12" % "1.6.4",
 	"com.github.scala-incubator.io" %% "scala-io-core" % "0.3.0",
 	"com.github.scala-incubator.io" %% "scala-io-file" % "0.3.0",
+	 "org.ini4j" % "ini4j" % "0.5.2",
 	"net.sourceforge.htmlcleaner" % "htmlcleaner" % "2.2",
 	"com.thoughtworks.xstream" % "xstream" % "1.3.1"
 )
