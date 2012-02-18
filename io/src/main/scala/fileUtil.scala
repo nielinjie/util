@@ -6,6 +6,11 @@ import java.io.FileWriter
 import scala.io.Source
 import scalax.io.Resource
 
+import scala.util.control.Exception._
+
+import scalaz._
+import Scalaz._
+
 object FileUtil {
   def makeSureFolderExist(folder: File): Unit = {
     if (folder.exists) {
@@ -13,6 +18,14 @@ object FileUtil {
         throw new IllegalStateException("file exist, but not a folder")
     } else {
       folder.mkdirs
+    }
+  }
+  
+  def needFile(file:File) : Validation[Throwable,Option[File]]={
+    if (file.exists){
+      file.some.success
+    }else{
+      validation(allCatch.either(makeSureFolderExist(file.getParentFile())).map(x=>None))
     }
   }
   //  /**
@@ -37,7 +50,16 @@ object FileUtil {
 
   def recursiveListFiles(f: File): List[File] = {
     val these = f.listFiles.toList
-    (these ++ these.filter(_.isDirectory).flatMap(recursiveListFiles))
+    (these.filter(!_.isDirectory) ++ these.filter(_.isDirectory).flatMap(recursiveListFiles))
+  }
+  
+  def home:Validation[Throwable,File] ={
+    val p=System.getProperty("user.home")
+    if(p != null) (new File(p)).success else ( new IllegalStateException("system property 'user.home' is null")).fail
+  }
+  
+  def relativePath(base:File,file:File):String={
+   base.toURI().relativize(file.toURI()).getPath()
   }
 
 }

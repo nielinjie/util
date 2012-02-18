@@ -1,5 +1,5 @@
-package nielinjie.util
-package io
+package nielinjie
+package util.io
 
 object Threads {
   def thread[F](f: => F) = (new Thread(new Runnable() { def run() { f } }))

@@ -32,6 +32,7 @@ object Params {
     (m, k) => m.get(k)
   }
 
+
   type LookUpFunction[K, A, B] = (MapLike[K, A] => Validation[String, B])
 
   class LookingUp[K, A, B](val exece: LookUpFunction[K, A, B]) {

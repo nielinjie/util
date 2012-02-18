@@ -1,5 +1,5 @@
-package nielinjie.util
-package io
+package nielinjie
+package util.io
 import com.weiglewilczek.slf4s.Logging
 
 import scalaz._

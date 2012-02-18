@@ -8,67 +8,62 @@ import scalaz._
 import Scalaz._
 import java.util.Timer
 import java.util.TimerTask
+import reactive.Val
+import reactive.SeqSignal
+import reactive.Var
+import reactive.Observing
 
-class Flasher(sendPort: Int, receivePort: Int) {
+class Flasher(sendPort: Int, receivePort: Int, message: String) extends Logger {
   lazy val localAddress = LocalAddress.getFirstNonLoopbackAddress(true, false)
   lazy val boardcastAddress = LocalAddress.getBoardcastAddress(localAddress)
-  println(boardcastAddress)
-  val str = "1"
+  logger.debug(boardcastAddress.toString)
+  //val str = "1"
   def flash = {
-    println("flash")
+    logger.debug("flash")
     val ds = new DatagramSocket(sendPort, localAddress)
-    val dp = new DatagramPacket(str.getBytes(), str.getBytes().length, boardcastAddress, receivePort)
+    val dp = new DatagramPacket(message.getBytes(), message.getBytes().length, boardcastAddress, receivePort)
     ds.send(dp)
     ds.close()
   }
   def watch: FlashMessage = {
-    println("now")
+    //TODO move new socket to keepWatching start?
     val ds = new DatagramSocket(receivePort)
-    println("new")
     val buf: Array[Byte] = Array.ofDim[Byte](1024)
     val dp = new DatagramPacket(buf, 1024)
-    println("recieving")
+    logger.debug("recieving")
     ds.receive(dp)
-    println("recieved")
+    logger.debug("recieved")
     val re = FlashMessage(new String(dp.getData(), 0, dp.getLength()), dp.getAddress())
-    println("recieved - %s".format(re))
+    logger.debug("recieved - %s".format(re))
     ds.close()
     re
   }
-  def keepWatching=new {
+  def keepWatching = new {
     import Threads._
-    var messages:List[FlashMessage]=List()
-    def start= thread ({while(true){messages=watch::messages}}).start
+    val msges = Var(List[FlashMessage]())
+    val messages = SeqSignal(msges)
+    def start = thread({ while (true) { msges() = watch :: msges.now } }).start
   }
-  def keepFlashing(intveral:Int)= new Timer().schedule(new TimerTask{
-    override def run ={
+  def keepFlashing(intveral: Int) = new Timer().schedule(new TimerTask {
+    override def run = {
       flash
     }
   }, intveral, intveral);
 
 }
 case class FlashMessage(message: String, origin: InetAddress)
-case class Peer(address:InetAddress)
+case class Peer(address: InetAddress)
 
-object Demo extends App {
-  val flasher = new Flasher(3002, 3001)
-//  val message = promise {
-//    Iterator.continually({
-//      flasher.watch
-//    }).toList
-//  }
-//  message.map {
-//    list =>
-//      println(list)
-//  }
-//  Thread.sleep(5000)
-//  flasher.flash
-//  flasher.flash
-//  println("try to get")
-//  println(message())
-  val watching=flasher.keepWatching
+object Demo extends App with Logger with Observing {
+  val flasher = new Flasher(3002, 3001, "1")
+  val watching = flasher.keepWatching
+  watching.messages.deltas.foreach {
+    case d => {
+      logger.debug(d.toString)
+    }
+  }
   watching.start
+  Thread.sleep(1000)
   flasher.flash
-  Thread.sleep(3000)
-  println(watching.messages)
+
 }
