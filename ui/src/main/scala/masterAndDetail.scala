@@ -6,19 +6,15 @@ import Scalaz._
 
 case class SingleSelection[A](var value: Option[A], var index: Option[Int]) {
   def saveToMaster(master: List[A], filtered: Option[List[(A, Int)]]): List[A] = {
-    //println(master)
-    //println(filtered)
     val re = index.map {
       i =>
         master.updated(filtered.map(_.apply(i)._2).getOrElse(i), value.get)
     }.getOrElse(master)
-    //println(re)
     re
   }
 
   def selected = !(this.index.isEmpty)
 }
-
 
 class MasterDetail[A](_master: List[A]) {
   private var master: List[A] = _master
@@ -48,7 +44,6 @@ class MasterDetail[A](_master: List[A]) {
     select(None)
   }
 
-
   def select(index: Option[Int]): Unit = {
 
     val oldSelection = this.selection
@@ -63,7 +58,6 @@ class MasterDetail[A](_master: List[A]) {
     }
 
   }
-
 
   def saveDetail = {
     this.detailBind.foreach {
@@ -143,9 +137,10 @@ object SwingSupport extends Observing {
     val selectSupport = listView.singleSelectionEvents
     masterDetail.masterBind = Some(Bind(({
       //TODO add some logic to handle error?
-      olist => olist.fold({
-        x =>
-      }, selectSupport.updateKeepingSelect(_))
+      olist =>
+        olist.fold({
+          x =>
+        }, selectSupport.updateKeepingSelect(_))
     }), {
       list => Nil
     }))

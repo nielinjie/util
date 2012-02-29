@@ -31,8 +31,11 @@ class MigPanel(layoutc: String, colc: String, rowc: String) extends Panel with L
 object Mig {
   def fill = new SimpleConstraint("fill")
   def fill(int: Int): Constraint = fill + prefer(int)
+  def h(int:Int)=new SimpleConstraint("h %s".format(prefer(int).asString))
+  def w(int:Int)=new SimpleConstraint("w %s".format(prefer(int).asString))
   def wrap = new SimpleConstraint("wrap")
   def debug = new SimpleConstraint("debug")
+  def grow=new SimpleConstraint("grow")
   def none = new SimpleConstraint("")
   def prefer(size: Int) = Sizes(None, size.some, None)
 
