@@ -100,17 +100,17 @@ object LookUpSpecs extends Specification {
       lookingUp3(theMap) must equalTo((1, Some(2), 1).success)
     }
   }
-//  "use as applicative functor, (not so useful)" in {
-//    val theMap = Map("a" -> 1, "b" -> 2)
-//    val lookingUp = for {
-//      a <- lookUp("a").as[Int].required.ensuring(x => x != 1)
-//      b <- lookUp("b").as[Int].default(1);
-//      c <- lookUp("c")
-//      d <- lookUp("d").as[Int].default(1)
-//    } yield (a, b, c, d)
-//    ((lookUp("a").required)(theMap) |@|
-//      (lookUp("b").required)(theMap)).apply((_, _)) must equalTo((1, 2).success)
-//  }
+  //  "use as applicative functor, (not so useful)" in {
+  //    val theMap = Map("a" -> 1, "b" -> 2)
+  //    val lookingUp = for {
+  //      a <- lookUp("a").as[Int].required.ensuring(x => x != 1)
+  //      b <- lookUp("b").as[Int].default(1);
+  //      c <- lookUp("c")
+  //      d <- lookUp("d").as[Int].default(1)
+  //    } yield (a, b, c, d)
+  //    ((lookUp("a").required)(theMap) |@|
+  //      (lookUp("b").required)(theMap)).apply((_, _)) must equalTo((1, 2).success)
+  //  }
 
   "value type safe" in {
     val theMap = Map("1" -> 10, "2" -> 20)
@@ -126,8 +126,8 @@ object LookUpSpecs extends Specification {
   "lookup in xml with projection function" in {
     import xml._
     val x = <a>
-      <b attr="c">bText</b>
-    </a>
+              <b attr="c">bText</b>
+            </a>
     implicit def xmlProjection: (Elem, Elem => NodeSeq) => Option[String] = {
       (x, f) =>
         f(x) match {
@@ -145,14 +145,47 @@ object LookUpSpecs extends Specification {
     lookingUp(x) must equalTo(("bText", "c", None, None).success)
 
   }
-//
-//    "multiple lookuping" in {
-//      val theMultipleMap = List("1" -> 10, "1" -> 100, "2" -> 20)
-//      val multiLookingUp = for {
-//        a <- lookUpMoreFor[Int]("1").number(2)
-//        b <- lookUpMoreFor[Int]("2").one
-//      } yield (a, b)
-//      multiLookingUp(theMultipleMap) mst equalTo((List(10, 100), 20).success)
-//    }
+
+  "multiple lookuping" in {
+    implicit def mapMoreProjectFunction[K, A]: (Map[K, List[A]], K) => List[A] = {
+      (m, k) => m.get(k).toList.flatten
+    }
+    val theMultipleMap = Map("1" -> List(10, 100), "2" -> List(20))
+    "simple" in {
+      val multiLookingUp = for {
+        a <- lookUpMoreFor[Int]("1")
+        b <- lookUpMoreFor[Int]("2")
+      } yield (a, b)
+      multiLookingUp(theMultipleMap) must equalTo((List(10, 100), List(20)).success)
+    }
+    "required" in {
+       val multiLookingUp = for {
+        a <- lookUpMoreFor[Int]("1").required
+        b <- lookUpMoreFor[Int]("2")
+        c <- lookUpMoreFor[Int]("3")
+      } yield (a, b,c)
+      multiLookingUp(theMultipleMap) must equalTo((10, List(20),List()).success)
+    }
+    "default" in {
+       val multiLookingUp = for {
+        a <- lookUpMoreFor[Int]("1").required
+        b <- lookUpMoreFor[Int]("2")
+        c <- lookUpMoreFor[Int]("3").default(3)
+      } yield (a, b,c)
+      multiLookingUp(theMultipleMap) must equalTo((10, List(20),3).success)
+    }
+    "ensuring" in {
+       val multiLookingUp = for {
+        a <- lookUpMoreFor[Int]("1").ensuring(_ >= 10)
+        b <- lookUpMoreFor[Int]("2")
+      } yield (a, b)
+      multiLookingUp(theMultipleMap) must equalTo((List(10,100), List(20)).success)
+       val multiLookingUp2 = for {
+        a <- lookUpMoreFor[Int]("1").ensuring(_ >= 100)
+        b <- lookUpMoreFor[Int]("2")
+      } yield (a, b)
+      multiLookingUp2(theMultipleMap) .isFailure must beTrue
+    }
+  }
 
 }

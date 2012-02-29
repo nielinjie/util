@@ -19,7 +19,7 @@ object LookUp {
     })
   }
   def lookUp[K](key: K) = {
-    new WrappedLookingUp[K, Any, Any,Option]({
+    new WrappedLookingUp[K, Any, Any, Option]({
       x: MapLike[K, Any, Option] =>
         success(x.get(key))
     })
@@ -33,14 +33,14 @@ object LookUp {
   }
 
   def lookUpFor[V] = new LP[V]
-  //
-  //  class LPM[V] {
-  //    def apply[K](key: K) = new MultipleLookingUp[K, V, V]({
-  //      x =>
-  //        success(x.get(key))
-  //    })
-  //  }
-  //  def lookUpMoreFor[V] = new LPM[V]
+
+  class LPM[V] {
+    def apply[K](key: K) = new WrappedLookingUp[K, V, V, List]({
+      x =>
+        success(x.get(key))
+    })
+  }
+  def lookUpMoreFor[V] = new LPM[V]
 
   trait MapLike[K, V, W[_]] {
     def get(key: K): W[V]
@@ -49,6 +49,8 @@ object LookUp {
   implicit def mapProjectFunction[K, A]: (Map[K, A], K) => Option[A] = {
     (m, k) => m.get(k)
   }
+
+  
 
   type LookUpFunction[K, A, B, W[_]] = (MapLike[K, A, W] => Validation[String, B])
   class LookingUp[K, A, B, W[_]](val exece: LookUpFunction[K, A, B, W]) {
