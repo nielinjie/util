@@ -2,11 +2,11 @@ package nielinjie
 package util.data
 
 import org.specs2.mutable._
-import Params._
+import LookUp._
 import scalaz._
 import scala.Either
 
-object ParamsSpecs extends Specification {
+object LookUpSpecs extends Specification {
 
   import Scalaz._
 
@@ -38,21 +38,21 @@ object ParamsSpecs extends Specification {
     val theMap = Map("a" -> 1, "b" -> 2)
     "required guards" in {
       val lookingUp = for {
-        a <- lookUp("a").required;
+        a <- lookUp("a").as[Int].required;
         b <- lookUp("b");
         c <- lookUp("c")
       } yield (a, b, c)
       lookingUp(theMap) must equalTo((1, Some(2), None).success)
       val lookingUp2 = for {
-        a <- lookUp("a").required;
+        a <- lookUp("a").as[Int].required;
         b <- lookUp("b");
-        c <- lookUp("c").required
+        c <- lookUp("c").as[Int].required
       } yield (a, b, c)
       lookingUp2(theMap).isFailure must beTrue
     }
     "default works" in {
       val lookingUp = for {
-        a <- lookUp("a").required;
+        a <- lookUp("a").as[Int].required;
         b <- lookUp("b").as[Int].default(1);
         c <- lookUp("c")
         d <- lookUp("d").as[Int].default(1)
@@ -100,17 +100,17 @@ object ParamsSpecs extends Specification {
       lookingUp3(theMap) must equalTo((1, Some(2), 1).success)
     }
   }
-  "use as applicative functor, (not so useful)" in {
-    val theMap = Map("a" -> 1, "b" -> 2)
-    val lookingUp = for {
-      a <- lookUp("a").required.ensuring(x => x != 1)
-      b <- lookUp("b").as[Int].default(1);
-      c <- lookUp("c")
-      d <- lookUp("d").as[Int].default(1)
-    } yield (a, b, c, d)
-    ((lookUp("a").required)(theMap) |@|
-      (lookUp("b").required)(theMap)).apply((_, _)) must equalTo((1, 2).success)
-  }
+//  "use as applicative functor, (not so useful)" in {
+//    val theMap = Map("a" -> 1, "b" -> 2)
+//    val lookingUp = for {
+//      a <- lookUp("a").as[Int].required.ensuring(x => x != 1)
+//      b <- lookUp("b").as[Int].default(1);
+//      c <- lookUp("c")
+//      d <- lookUp("d").as[Int].default(1)
+//    } yield (a, b, c, d)
+//    ((lookUp("a").required)(theMap) |@|
+//      (lookUp("b").required)(theMap)).apply((_, _)) must equalTo((1, 2).success)
+//  }
 
   "value type safe" in {
     val theMap = Map("1" -> 10, "2" -> 20)
@@ -145,15 +145,14 @@ object ParamsSpecs extends Specification {
     lookingUp(x) must equalTo(("bText", "c", None, None).success)
 
   }
-
-  //TODO todo?
-  //  "multiple lookuping" in {
-  //    val theMultipleMap = List("1" -> 10, "1" -> 100, "2" -> 20)
-  //    val multiLookingUp = for {
-  //      a <- lookUpFor[Int]("1").number(2)
-  //      b <- lookUpFor[Int]("2").one
-  //    } yield (a, b)
-  //    multiLookingUp(theMultipleMap) mst equalTo((List(10, 100), 20).success)
-  //  }
+//
+//    "multiple lookuping" in {
+//      val theMultipleMap = List("1" -> 10, "1" -> 100, "2" -> 20)
+//      val multiLookingUp = for {
+//        a <- lookUpMoreFor[Int]("1").number(2)
+//        b <- lookUpMoreFor[Int]("2").one
+//      } yield (a, b)
+//      multiLookingUp(theMultipleMap) mst equalTo((List(10, 100), 20).success)
+//    }
 
 }
