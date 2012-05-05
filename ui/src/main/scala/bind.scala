@@ -8,6 +8,8 @@ case class Bind[A](val push: (Validation[String, A] => Unit), val pull: (A => A)
   def andThen(b:Bind[A])={
     Bind({va:Validation[String,A]=>this.push(va);b.push(va)},pull.andThen(b.pull)) //TODO pull is not support.
   }
+  //TODO add this with scala 2.10
+  //def pushF(future:Future[Validation[String, A]])
 }
 
 object Bind {

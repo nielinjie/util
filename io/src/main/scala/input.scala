@@ -7,13 +7,16 @@ import JavaConverters.asOutputConverter
 import reactive.Var
 import reactive.Observing
 import java.io.ByteArrayOutputStream
-
-class CountingInput(input: Input) {
-  val count = Var(0)
-  val asInput = countingInput(input, { count() = _ })
-  def countingInput(input: Input, countingFn: Int => Unit): Input = input.bytes.zipWithIndex.map {
-    case (byte, index) =>
-      countingFn(index+1)
-      byte
-  }.asInput
+import java.io.InputStream
+import org.apache.commons.io.input.CountingInputStream
+import reactive.EventSource
+class CountingInput(input: InputStream) extends Logger{
+  val countChange=new EventSource[Long] {}
+  val counting=new CountingInputStream(input) {
+    override def afterRead(n:Int)={
+      super.afterRead(n)
+      countChange.fire(super.getByteCount)
+    }
+  }
+  def asInput=counting.asInput
 }

@@ -165,6 +165,11 @@ object LookUpSpecs extends Specification {
         c <- lookUpMoreFor[Int]("3")
       } yield (a, b,c)
       multiLookingUp(theMultipleMap) must equalTo((10, List(20),List()).success)
+       ((for {
+        a <- lookUpMoreFor[Int]("1").required
+        b <- lookUpMoreFor[Int]("2")
+        c <- lookUpMoreFor[Int]("3").required
+      } yield (a, b,c))(theMultipleMap)) .isFailure must beTrue
     }
     "default" in {
        val multiLookingUp = for {

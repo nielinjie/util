@@ -32,49 +32,41 @@ class WrappedLookingUp[K, A, B, W[_]](exece: LookUpFunction[K, A, W[B], W])(impl
         })
     })
   }
-  
 
+  def required(implicit fa: Foldable[W]): SimpleLookingUp[K, A, B, W] = {
+    new SimpleLookingUp[K, A, B, W]({
+      m: MapLike[K, A, W] =>
+        wlu.exece(m).flatMap({
+          result =>
+            headO(result)(fa) match {
+              case Some(a) => success(a)
+              case None => failure("required, but not found")
+            }
+        })
+    })
+  }
 
-    def required(implicit fa:Foldable[W]): SimpleLookingUp[K, A, B, W] = {
-      new SimpleLookingUp[K, A, B, W]({
-        m: MapLike[K, A, W] =>
-          wlu.exece(m).flatMap({
-            result =>
-              headO(result)(fa) match{
-                case Some(a) => success(a)
-                case None => failure("required, but not found")
-              }
-          })
-      })
-    }
+  def default(d: B)(implicit fa: Foldable[W]): SimpleLookingUp[K, A, B, W] = {
+    new SimpleLookingUp[K, A, B, W]({
+      m: MapLike[K, A, W] =>
+        wlu.exece(m).flatMap({
+          result =>
+            headO(result)(fa) match {
+              case Some(a) => success(a)
+              case None => success(d)
+            }
+        })
+    })
+  }
 
-    def default(d: B)(implicit fa:Foldable[W]): SimpleLookingUp[K, A, B, W] = {
-      new SimpleLookingUp[K, A, B, W]({
-        m: MapLike[K, A, W] =>
-          wlu.exece(m).flatMap({
-            result =>
-              headO(result)(fa) match{
-                case Some(a) => success(a)
-                case None => success(d)
-              }
-          })
-      })
-    }
+  def ensuring(condition: (B) => Boolean)(implicit fa: Foldable[W]): WrappedLookingUp[K, A, B, W] = ensuring(condition, "ensuring faild")(fa)
 
-  def ensuring(condition: (B) => Boolean)(implicit fa:Foldable[W]): WrappedLookingUp[K, A, B, W] = ensuring(condition, "ensuring faild")(fa)
-
-  def ensuring(condition: (B) => Boolean, message: String)(implicit fa:Foldable[W]): WrappedLookingUp[K, A, B, W] = {
+  def ensuring(condition: (B) => Boolean, message: String)(implicit fa: Foldable[W]): WrappedLookingUp[K, A, B, W] = {
     new WrappedLookingUp[K, A, B, W]({
       m: MapLike[K, A, W] =>
         wlu.exece(m).flatMap({
           result =>
             if (result.all(condition)) success(result) else failure(message)
-          //            result match {
-          //              case Some(a: B) => {
-          //                if (condition(a)) success(Some(a)) else failure(message)
-          //              }
-          //              case None => failure("None")
-          //            }
         })
     })(f)
   }
