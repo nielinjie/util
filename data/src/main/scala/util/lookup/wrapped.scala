@@ -8,6 +8,14 @@ import Scalaz._
 //TODO WrappedLookingUp[K,A,B,W] 
 class WrappedLookingUp[K, A, B, W[_]](exece: LookUpFunction[K, A, W[B], W])(implicit val f: Functor[W]) extends LookingUp[K, A, W[B], W](exece) {
   wlu =>
+
+  def fmap[C](fu: B => C): WrappedLookingUp[K, A, C, W] = {
+      new WrappedLookingUp({
+        m: MapLike[K, A, W] =>
+          exece(m).map(f.fmap(_,fu))
+      })(f)
+    }
+
   def as[C <: B]: WrappedLookingUp[K, A, C, W] = {
     new WrappedLookingUp[K, A, C, W]({
       m: MapLike[K, A, W] =>

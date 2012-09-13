@@ -98,19 +98,29 @@ object LookUpSpecs extends Specification {
         d <- lookUp("d").as[Int].default(1)
       } yield (a, b, d)
       lookingUp3(theMap) must equalTo((1, Some(2), 1).success)
+
+    }
+    "fmap " in {
+      val lookingUp3 = for {
+        a <- lookUp("a").required.as[Int].fmap(_ + 1)
+        b <- lookUp("b").as[Int].fmap(_ + 1)
+        d <- lookUp("d").as[Int].fmap(_ + 1)
+      } yield (a, b, d)
+      lookingUp3(theMap) must equalTo((2, Some(3), None).success)
     }
   }
-  //  "use as applicative functor, (not so useful)" in {
-  //    val theMap = Map("a" -> 1, "b" -> 2)
-  //    val lookingUp = for {
-  //      a <- lookUp("a").as[Int].required.ensuring(x => x != 1)
-  //      b <- lookUp("b").as[Int].default(1);
-  //      c <- lookUp("c")
-  //      d <- lookUp("d").as[Int].default(1)
-  //    } yield (a, b, c, d)
-  //    ((lookUp("a").required)(theMap) |@|
-  //      (lookUp("b").required)(theMap)).apply((_, _)) must equalTo((1, 2).success)
-  //  }
+  // TODO: applicative (and orther type class?)
+//  "use as applicative functor, (not so useful)" in {
+//    val theMap = Map("a" -> 1, "b" -> 2)
+//    val lookingUp = for {
+//      a <- lookUp("a").as[Int].required.ensuring(x => x != 1)
+//      b <- lookUp("b").as[Int].default(1);
+//      c <- lookUp("c")
+//      d <- lookUp("d").as[Int].default(1)
+//    } yield (a, b, c, d)
+//    ((lookUp("a").required) |@|
+//      (lookUp("b").required)).apply((_, _)) must equalTo((1, 2).success)
+//  }
 
   "value type safe" in {
     val theMap = Map("1" -> 10, "2" -> 20)
@@ -159,37 +169,50 @@ object LookUpSpecs extends Specification {
       multiLookingUp(theMultipleMap) must equalTo((List(10, 100), List(20)).success)
     }
     "required" in {
-       val multiLookingUp = for {
+      val multiLookingUp = for {
         a <- lookUpMoreFor[Int]("1").required
         b <- lookUpMoreFor[Int]("2")
         c <- lookUpMoreFor[Int]("3")
-      } yield (a, b,c)
-      multiLookingUp(theMultipleMap) must equalTo((10, List(20),List()).success)
-       ((for {
+      } yield (a, b, c)
+      multiLookingUp(theMultipleMap) must equalTo((10, List(20), List()).success)
+      ((for {
         a <- lookUpMoreFor[Int]("1").required
         b <- lookUpMoreFor[Int]("2")
         c <- lookUpMoreFor[Int]("3").required
-      } yield (a, b,c))(theMultipleMap)) .isFailure must beTrue
+      } yield (a, b, c))(theMultipleMap)).isFailure must beTrue
     }
     "default" in {
-       val multiLookingUp = for {
+      val multiLookingUp = for {
         a <- lookUpMoreFor[Int]("1").required
         b <- lookUpMoreFor[Int]("2")
         c <- lookUpMoreFor[Int]("3").default(3)
-      } yield (a, b,c)
-      multiLookingUp(theMultipleMap) must equalTo((10, List(20),3).success)
+      } yield (a, b, c)
+      multiLookingUp(theMultipleMap) must equalTo((10, List(20), 3).success)
     }
     "ensuring" in {
-       val multiLookingUp = for {
+      val multiLookingUp = for {
         a <- lookUpMoreFor[Int]("1").ensuring(_ >= 10)
         b <- lookUpMoreFor[Int]("2")
       } yield (a, b)
-      multiLookingUp(theMultipleMap) must equalTo((List(10,100), List(20)).success)
-       val multiLookingUp2 = for {
+      multiLookingUp(theMultipleMap) must equalTo((List(10, 100), List(20)).success)
+      val multiLookingUp2 = for {
         a <- lookUpMoreFor[Int]("1").ensuring(_ >= 100)
         b <- lookUpMoreFor[Int]("2")
       } yield (a, b)
-      multiLookingUp2(theMultipleMap) .isFailure must beTrue
+      multiLookingUp2(theMultipleMap).isFailure must beTrue
+    }
+  }
+  "exception in project function " in {
+    implicit def mapProjectFunction[K, A]: (Map[K, A], K) => Option[A] = {
+      (m, k) => throw new RuntimeException("fake exception")
+    }
+    val theMap = Map("a" -> 1, "b" -> 2)
+    "param lookup with for comprehension" in {
+      val lookingUp = for {
+        a <- lookUp("a")
+      } yield (a.get)
+      lookingUp.apply(theMap).isFailure must beTrue
+
     }
   }
 

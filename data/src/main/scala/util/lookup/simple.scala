@@ -6,7 +6,17 @@ import LookUp._
 import scalaz._
 import Scalaz._
 
+
+//Use ID(ID[A]==A) here?
 class SimpleLookingUp[K, A, B, W[_]](exece: LookUpFunction[K, A, B, W]) extends LookingUp[K, A, B, W](exece) {
+  
+   def fmap[C](f: B => C): SimpleLookingUp[K, A, C, W] = {
+      new SimpleLookingUp({
+        m: MapLike[K, A, W] =>
+          exece(m).map(f)
+      })
+    }
+  
   def as[C <: B ]: SimpleLookingUp[K, A, C, W] = {
     new SimpleLookingUp[K, A, C, W]({
       m: MapLike[K, A, W] =>
