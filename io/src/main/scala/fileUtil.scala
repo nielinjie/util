@@ -5,11 +5,10 @@ import java.io.File
 import java.io.FileWriter
 import scala.io.Source
 import scalax.io.Resource
-
 import scala.util.control.Exception._
-
 import scalaz._
 import Scalaz._
+import scalax.io.Codec
 
 object FileUtil {
   def makeSureFolderExist(folder: File): Unit = {
@@ -37,7 +36,7 @@ object FileUtil {
     if (!file.exists) {
       makeSureFolderExist(file.getParentFile)
     }
-    Resource.fromFile(file).write(text)
+    Resource.fromFile(file).write(text)(Codec.UTF8)
   }
   //  /**
   //   * use scala-io
@@ -45,7 +44,7 @@ object FileUtil {
   //   */
   //  @deprecated("use scala-io","1.0")
   def fromFile(file: File): String = {
-    Resource.fromFile(file).slurpString()
+    Resource.fromFile(file).string(Codec.UTF8)
   }
 
   def recursiveListFiles(f: File): List[File] = {
