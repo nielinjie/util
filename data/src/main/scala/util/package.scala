@@ -4,7 +4,7 @@ package util.data
 import java.io.File
 
 import scalaz._
-import Scalaz._
+import Validation._
 
 package object data {
   type Converter[-A, C] = Function[A, C]

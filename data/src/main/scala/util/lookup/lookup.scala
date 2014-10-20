@@ -4,21 +4,24 @@ package util.data
 import scalaz._
 
 import scala.util.control.Exception._
+import nielinjie.util.data._
 object LookUp {
 
-  import Scalaz._
+  import Validation._
+  import std.option._
+  import std.list._
   import data._
   
   
 
   def headO[M[_], A](m: M[A])(implicit fa: Foldable[M]): Option[A] = {
-    fa.foldLeft(m, None, {
+    fa.foldLeft(m, None.asInstanceOf[Option[A]]){
       (listLike: Option[A], element: A) =>
         listLike match {
           case Some(s) => listLike
           case None => Option(element)
         }
-    })
+    }
   }
   def lookUp[K](key: K) = {
     new WrappedLookingUp[K, Any, Any, Option]({
@@ -79,12 +82,26 @@ object LookUp {
           result.fold(failure(_), f(_).exece(m))
       })
     }
+    def foreach(fun:B => Unit) ={
+      this
+    }
 
     def apply[M](m: M)(implicit projectionFunction: (M, K) => W[A]) = {
       val map = new MapLike[K, A, W] {
         def get(key: K): W[A] = projectionFunction(m, key)
       }
       exece(map)
+    }
+    def asValidate ={
+      new {
+        def apply[M](m: M)(implicit projectionFunction: (M, K) => W[A]) = {
+          val map = new MapLike[K, A, W] {
+            def get(key: K): W[A] = projectionFunction(m, key)
+          }
+          exece(map).map(_=>m)
+
+        }
+      }
     }
   }
 

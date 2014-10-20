@@ -4,11 +4,12 @@ package util.data
 import org.specs2.mutable._
 import LookUp._
 import scalaz._
-import scala.Either
+import std.option._
+import std.list._
 
 object LookUpSpecs extends Specification {
 
-  import Scalaz._
+  import syntax.validation._
 
   "params looking up works" in {
 

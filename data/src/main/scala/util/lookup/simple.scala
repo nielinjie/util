@@ -4,7 +4,9 @@ package util.data
 import data.Converter
 import LookUp._
 import scalaz._
-import Scalaz._
+import Validation._
+import scalaz.std.either._
+import scala.util.control.Exception._
 
 
 //Use ID(ID[A]==A) here?
@@ -22,7 +24,7 @@ class SimpleLookingUp[K, A, B, W[_]](exece: LookUpFunction[K, A, B, W]) extends 
       m: MapLike[K, A, W] =>
         this.exece(m).flatMap({
           result =>
-            success(result.asInstanceOf[C])
+            fromTryCatch(result.asInstanceOf[C]).leftMap(_.getMessage)
         })
     })
   }
@@ -32,7 +34,7 @@ class SimpleLookingUp[K, A, B, W[_]](exece: LookUpFunction[K, A, B, W]) extends 
       m: MapLike[K, A, W] =>
         this.exece(m).flatMap({
           result =>
-            success(converter(result))
+            fromTryCatch(converter(result)).leftMap(_.getMessage)
         })
     })
   }
@@ -44,7 +46,11 @@ class SimpleLookingUp[K, A, B, W[_]](exece: LookUpFunction[K, A, B, W]) extends 
       m: MapLike[K, A, W] =>
         this.exece(m).flatMap({
           result =>
-            if (condition(result)) success(result) else failure(message)
+            fromTryCatch(condition(result)) match {
+              case Success(true) =>success(result)
+              case Success(false) => failure(message)
+              case Failure(e) => failure(e.getMessage)
+            }
         })
     })
   }

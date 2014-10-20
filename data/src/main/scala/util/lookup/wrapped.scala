@@ -4,15 +4,15 @@ package util.data
 import data.Converter
 import LookUp._
 import scalaz._
-import Scalaz._
-//TODO WrappedLookingUp[K,A,B,W] 
+import Validation._
+//TODO WrappedLookingUp[K,A,B,W]
 class WrappedLookingUp[K, A, B, W[_]](exece: LookUpFunction[K, A, W[B], W])(implicit val f: Functor[W]) extends LookingUp[K, A, W[B], W](exece) {
   wlu =>
 
   def fmap[C](fu: B => C): WrappedLookingUp[K, A, C, W] = {
       new WrappedLookingUp({
         m: MapLike[K, A, W] =>
-          exece(m).map(f.fmap(_,fu))
+          exece(m).map(f.map(_)(fu))
       })(f)
     }
 
@@ -22,7 +22,7 @@ class WrappedLookingUp[K, A, B, W[_]](exece: LookUpFunction[K, A, W[B], W])(impl
         wlu.exece(m).flatMap({
           result =>
             success(
-              result.map {
+              f.map (result){
                 r => r.asInstanceOf[C]
               })
         })
@@ -34,8 +34,9 @@ class WrappedLookingUp[K, A, B, W[_]](exece: LookUpFunction[K, A, W[B], W])(impl
       m: MapLike[K, A, W] =>
         wlu.exece(m).flatMap({
           result =>
-            success(result.map {
-              r => converter(r)
+            success(f.map(result) {
+              r =>
+                converter(r)
             })
         })
     })
@@ -74,7 +75,7 @@ class WrappedLookingUp[K, A, B, W[_]](exece: LookUpFunction[K, A, W[B], W])(impl
       m: MapLike[K, A, W] =>
         wlu.exece(m).flatMap({
           result =>
-            if (result.all(condition)) success(result) else failure(message)
+            if (fa.all(result)(condition)) success(result) else failure(message)
         })
     })(f)
   }
