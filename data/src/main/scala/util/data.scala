@@ -3,6 +3,9 @@ package util.data
 
 import java.io.File
 
+import scalaz._
+import Scalaz._
+
 package object data {
   type Converter[-A, C] = Function[A, C]
   implicit val any2String = {
@@ -16,6 +19,10 @@ package object data {
   }
   implicit val string2Boolean = {
     x: String => x.toBoolean
+  }
+  
+  implicit def e2v[T](e:Either[Throwable,T]):Validation[String,T]={
+    e.fold({t:Throwable=>failure(t.getMessage)}, {t:T=>success(t)})
   }
 
 }
