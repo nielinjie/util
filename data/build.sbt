@@ -7,19 +7,24 @@ version := "1.0"
 
 organization := "nielinjie"
 
-scalaVersion := "2.10.3"
+scalaVersion := "2.10.4"
+
+crossScalaVersions := Seq("2.10.4","2.11.2")
+
 
 //resolvers += ScalaToolsSnapshots
 
-libraryDependencies += "org.specs2" %% "specs2" % "2.3.7" % "test" 
+libraryDependencies += "org.specs2" %% "specs2" % "2.4.9-scalaz-7.0.6" % "test"
 
-resolvers += "Sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots"
+resolvers += "Scalaz Bintray Repo"  at "http://dl.bintray.com/scalaz/releases"
+
 
 libraryDependencies ++= Seq(
-	 "org.scalaz" %% "scalaz-core" % "7.0.3",
-	 "cc.co.scala-reactive" %% "reactive-core" % "0.3.0",
+	 "org.scalaz" %% "scalaz-core" % "7.0.6",
 	 "org.scala-stm" %% "scala-stm" % "0.7"
 )
+
+
 
 //seq(jacoco.settings : _*)
 
